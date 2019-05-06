@@ -1,7 +1,7 @@
 version: 2.1
 description: |
-  Pushes code to Pantheon
-  
+  Pushes code to Pantheon, a platform for Drupal and WordPress.
+
 defaults: &defaults
   docker:
   - image: quay.io/pantheon-public/build-tools-ci:4.x
@@ -12,6 +12,11 @@ defaults: &defaults
     BUILD_TOOLS_VERSION: dev-master
     TERM: dumb
 
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - run: echo "'circleci config validate' needs a job named 'build' in order to return without error."
   push:
     <<: *defaults
     steps:
@@ -19,21 +24,17 @@ defaults: &defaults
     - run: echo "TODO check that the orb job has all required variables."
     - run: /build-tools-ci/scripts/set-environment
     - run: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
-
     - run:
         name: Delete old Multidevs and other prepare steps
         command: terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
-
     - run:
         name: deploy
         command: |
           # Create a new multidev site to test on
           terminus -n env:wake "$TERMINUS_SITE.dev"
           terminus -n build:env:create "$TERMINUS_SITE.dev" "$TERMINUS_ENV" --yes --clone-content
-
     - run: cp $BASH_ENV bash_env.txt
     - persist_to_workspace:
         root: .
         paths:
         - bash_env.txt
-
