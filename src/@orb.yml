@@ -19,9 +19,18 @@ jobs:
       - run: echo "'circleci config validate' needs a job named 'build' in order to return without error."
   push:
     <<: *defaults
+    parameters:
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
     steps:
 
-      - checkout
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
       - run: echo "TODO check that the orb job has all required variables."
       - run: /build-tools-ci/scripts/set-environment
       - run: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
