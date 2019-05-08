@@ -9,7 +9,7 @@ defaults: &defaults
   environment:
     TZ: "/usr/share/zoneinfo/America/Los_Angeles"
     ADMIN_USERNAME: admin
-    BUILD_TOOLS_VERSION: dev-master
+    BUILD_TOOLS_VERSION: option-for-no-force
     TERM: dumb
 
 jobs:
@@ -20,21 +20,71 @@ jobs:
   push:
     <<: *defaults
     steps:
-    - checkout
-    - run: echo "TODO check that the orb job has all required variables."
-    - run: /build-tools-ci/scripts/set-environment
-    - run: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
-    - run:
-        name: Delete old Multidevs and other prepare steps
-        command: terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
-    - run:
-        name: deploy
-        command: |
-          # Create a new multidev site to test on
-          terminus -n env:wake "$TERMINUS_SITE.dev"
-          terminus -n build:env:create "$TERMINUS_SITE.dev" "$TERMINUS_ENV" --yes --clone-content
-    - run: cp $BASH_ENV bash_env.txt
-    - persist_to_workspace:
-        root: .
-        paths:
-        - bash_env.txt
+
+      - checkout
+      - run: echo "TODO check that the orb job has all required variables."
+      - run: /build-tools-ci/scripts/set-environment
+      - run: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
+
+
+
+
+      - restore_cache:
+            keys:
+              - pantheon-repo-{{ .Branch }}
+              - pantheon-repo-
+      - run:
+          name: pantheon checkout
+          command: |
+            export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
+            if [ ! -d "$PANTHEON_REPO_DIR/.git" ]; then
+              mkdir $PANTHEON_REPO_DIR
+              git -C $PANTHEON_REPO_DIR init
+              git -C $PANTHEON_REPO_DIR remote add pantheon $(terminus connection:info $TERMINUS_SITE.dev --field=git_url)
+              git -C $PANTHEON_REPO_DIR remote -v
+            fi
+
+            git -C $PANTHEON_REPO_DIR fetch pantheon
+            REMOTE_REF=$(git -C $PANTHEON_REPO_DIR ls-remote pantheon | grep "refs/heads/$TERMINUS_ENV$") || echo "hmm, assigning an empty var returns an error."
+
+            if [ -n "$REMOTE_REF" ]; then
+              git -C $PANTHEON_REPO_DIR checkout $TERMINUS_ENV
+              git -C $PANTHEON_REPO_DIR pull
+            else
+              git -C $PANTHEON_REPO_DIR checkout master
+              git -C $PANTHEON_REPO_DIR pull
+              git -C $PANTHEON_REPO_DIR checkout -b $TERMINUS_ENV
+            fi
+
+      - save_cache:
+          key: pantheon-repo-{{ .Branch }}
+          paths:
+            - /tmp/pantheon_repo_for_$TERMINUS_SITE
+
+
+
+      - run:
+          name: Delete old Multidevs and other prepare steps
+          command: terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
+
+      - run:
+          name: rsync
+          command: |
+              export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
+              rsync -av --exclude='.git'  . $PANTHEON_REPO_DIR  --delete
+              git -C $PANTHEON_REPO_DIR status
+
+      - run:
+          name: deploy
+          command: |
+
+              export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
+              # Create a new multidev site to test on
+              terminus -n env:wake "$TERMINUS_SITE.dev"
+              cd $PANTHEON_REPO_DIR
+              terminus -n build:env:create "$TERMINUS_SITE.dev" "$TERMINUS_ENV" --yes --clone-content
+      - run: cp $BASH_ENV bash_env.txt
+      - persist_to_workspace:
+          root: .
+          paths:
+            - bash_env.txt
