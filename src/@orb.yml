@@ -4,7 +4,7 @@ description: |
 
 defaults: &defaults
   docker:
-  - image: quay.io/pantheon-public/build-tools-ci:4.x
+  - image: quay.io/pantheon-public/build-tools-ci:5.x
   working_directory: ~/sitedir
   environment:
     TZ: "/usr/share/zoneinfo/America/Los_Angeles"
