@@ -87,6 +87,18 @@ jobs:
               terminus -n env:wake "$TERMINUS_SITE.dev"
               cd $PANTHEON_REPO_DIR
               terminus -n build:env:create "$TERMINUS_SITE.live" "$TERMINUS_ENV" --yes --clone-content
+      - run:
+          name: Delete old multidevs
+          command: |
+            if [[ $CI_BRANCH != "master" ]] ; then
+              exit 0
+            fi
+            # Merge the multidev for the PR into the dev environment
+            terminus -n build:env:merge "$TERMINUS_SITE.$TERMINUS_ENV" --yes
+            # Delete old multidev environments associated with a PR that has been
+            # merged or closed.
+            terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
+
       - run: cp $BASH_ENV bash_env.txt
       - persist_to_workspace:
           root: .
