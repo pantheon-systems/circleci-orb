@@ -9,7 +9,7 @@ defaults: &defaults
   environment:
     TZ: "/usr/share/zoneinfo/America/Los_Angeles"
     ADMIN_USERNAME: admin
-    BUILD_TOOLS_VERSION: option-for-no-force
+    BUILD_TOOLS_VERSION: dev-option-for-no-force
     TERM: dumb
 
 jobs:
