@@ -4,6 +4,37 @@ orbs:
   orb-tools: circleci/orb-tools@8.5.0
 
 workflows:
-  lint_pack-validate_publish-dev:
+  publish-dev:
     jobs:
-      - orb-tools/lint
+      - orb-tools/publish-dev:
+          pre-steps:
+            - checkout
+            - run: circleci orb process src/@orb.yml
+          # pre steps to validate
+          alpha-version-ref: 'dev:$CIRCLE_BRANCH'
+          orb-name: pantheon-systems/pantheon
+          orb-path: 'src/@orb.yml'
+      # @todo, add integration tests.
+      # See https://github.com/pantheon-systems/circleci-orb/issues/2
+  publish:
+    jobs:
+      # CircleCI recommends a more complex workflow for promoting
+      # dev Orbs instead of directly creating tags.
+      # It might be worthwhile to switch to that workflow eventually.
+      # For the time being, I (Steve Persch) would prefer to make tags
+      # using the GitHub UI and let this step publish an Orb version with
+      # the same name as the tag.
+      # Manually creating tags introduces the possibility of making the wrong
+      # tag name. I think that the risk is acceptable for the simpler CI
+      # workflow here.
+      - orb-tools/publish:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /.*/
+          pre-steps:
+            - checkout
+            - run: circleci orb process src/@orb.yml
+          orb-ref: 'pantheon-systems/pantheon@$CIRCLE_TAG'
+          orb-path: 'src/@orb.yml'
