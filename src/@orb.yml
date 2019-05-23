@@ -35,13 +35,13 @@ jobs:
       # In all other cases a new Pantheon multidev will be created specifically
       # for this build number, ci-$CIRCLE_BUILD_NUM.
       - run:
-        name: Derive additional environment variables
-        command: /build-tools-ci/scripts/set-environment
+          name: Derive additional environment variables
+          command: /build-tools-ci/scripts/set-environment
 
       # Later commands require being signed in to Pantheon.
       - run:
-        name: Authenticate with Pantheon's CLI using a machine token
-        command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
+          name: Authenticate with Pantheon's CLI using a machine token
+          command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
 
       - restore_cache:
             keys:
@@ -89,7 +89,6 @@ jobs:
       - run:
           name: Commit code to Pantheon repository and push to Pantheon
           command: |
-
               export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
               # Create a new multidev site to test on
               terminus -n env:wake "$TERMINUS_SITE.dev"
