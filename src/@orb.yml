@@ -2,23 +2,16 @@ version: 2.1
 description: |
   Use CircleCI to push code to Pantheon Dev and Multidev Environments. Maintained at https://github.com/pantheon-systems/circleci-orb
 
-defaults: &defaults
-  docker:
-  - image: quay.io/pantheon-public/build-tools-ci:5.x
-  working_directory: ~/sitedir
-  environment:
-    TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-    ADMIN_USERNAME: admin
-    BUILD_TOOLS_VERSION: dev-option-for-no-force
-    TERM: dumb
-
 jobs:
-  build:
-    <<: *defaults
-    steps:
-      - run: echo "'circleci config validate' needs a job named 'build' in order to return without error."
   push:
-    <<: *defaults
+    docker:
+    - image: quay.io/pantheon-public/build-tools-ci:5.x
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      ADMIN_USERNAME: admin
+      BUILD_TOOLS_VERSION: dev-option-for-no-force
+      TERM: dumb
     parameters:
       checkout:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
@@ -31,16 +24,31 @@ jobs:
           steps:
             - checkout
 
-      - run: echo "TODO check that the orb job has all required variables."
-      - run: /build-tools-ci/scripts/set-environment
-      - run: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
+      # Set environment variables by calling a script from the container.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
+      # Perhaps the most important variable here is TERMINUS_ENV which
+      # determines which Pantheon environment is targeted.
+      # When on the master branch in GitHub, the target environment on Pantheon
+      # will be Dev.
+      # If the current commit is part of a pull request, the target environment
+      # will be the Multidev environment pr-$CI_PULL_REQUEST
+      # In all other cases a new Pantheon multidev will be created specifically
+      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      - run:
+        name: Derive additional environment variables
+        command: /build-tools-ci/scripts/set-environment
+
+      # Later commands require being signed in to Pantheon.
+      - run:
+        name: Authenticate with Pantheon's CLI using a machine token
+        command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
 
       - restore_cache:
             keys:
               - pantheon-repo-{{ .Branch }}
               - pantheon-repo-
       - run:
-          name: pantheon checkout
+          name: Checkout site repository from Pantheon
           command: |
             export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
             if [ ! -d "$PANTHEON_REPO_DIR/.git" ]; then
@@ -68,18 +76,18 @@ jobs:
             - /tmp/pantheon_repo_for_$TERMINUS_SITE
 
       - run:
-          name: Delete old Multidevs and other prepare steps
+          name: Delete old Multidevs to make space for a potential new one
           command: terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
 
       - run:
-          name: Sync
+          name: Copy code to the local clone of the Pantheon repository
           command: |
               export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
               rsync -av --exclude='.git'  . $PANTHEON_REPO_DIR  --delete
               git -C $PANTHEON_REPO_DIR status
 
       - run:
-          name: deploy
+          name: Commit code to Pantheon repository and push to Pantheon
           command: |
 
               export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
@@ -99,7 +107,9 @@ jobs:
             # merged or closed.
             terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
 
-      - run: cp $BASH_ENV bash_env.txt
+      - run:
+          name: Copy environment variables to persist to workspace for use in subsequent jobs.
+          command: cp $BASH_ENV bash_env.txt
       - persist_to_workspace:
           root: .
           paths:
