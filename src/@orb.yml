@@ -113,3 +113,16 @@ jobs:
           root: .
           paths:
             - bash_env.txt
+examples:
+  just_push:
+    description: |
+      The simplest example of using this Orb.
+    usage:
+      version: 2.1
+      workflows:
+        version: 2
+        just_push:
+          jobs:
+            - pantheon/push
+      orbs:
+        pantheon: pantheon-systems/pantheon@dev:0.0.1
