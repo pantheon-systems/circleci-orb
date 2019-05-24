@@ -12,7 +12,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
 ## Setting Up an Existing Pantheon Site To Use the `push` Job From This Orb
 
 1. Make a GitHub repo with the code from your Pantheon site.
-   * First make a [new repo](https://github.com/new).
+   * Make a [new repo](https://github.com/new) on GitHub if you do not have one yet.
    * Add the new GitHub repo as a remote to a local clone of your Pantheon site: `git remote add github git@github.com:YOUR_USERNAME/YOUR_REPO.git`
    * Push the master branch (the code currently on your Pantheon Dev environment) to the newly created GitHub repo: `git push github master:master`
 2. Configure CircleCI for your repository.
@@ -29,7 +29,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
         orbs:
         pantheon: pantheon-systems/pantheon@0.0.1
         ```
-   * Commit and push the file to GitHub. CircleCI will build attempt to run workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
+   * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option.
 3. Set up SSH keys and environment variables.
    * Pantheon requires SSH keys for performing git interactions. CircleCI needs a private key that matches a public key connected to your Pantheon account (or another account with access to the Pantheon site in question).
@@ -39,7 +39,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
    * Under Environment Variables in your CircleCI settings add a variable for `TERMINUS_SITE` set to the machine name of your Pantheon site.
    * [Create a Terminus machine token using the Pantheon Dashboard](https://pantheon.io/docs/machine-tokens/). Add it as another environment variable in CircleCI named `TERMINUS_TOKEN`.
    * Retrigger a build in CircleCI either by pushing a whitespace (or otherwise inocuous) change. This build should pass.
-4. (Optional) Under "Advanced Settings" in your CircleCI repository settings turn on "Only build pull requests." While not necessary, this setting prevents separate Pantheon Multidev environment from being created for each commit. With this setting on, all created multidevs will be named by pull request number and subsequent pushes to an open pull request will reuse the same Multidev environment.
+4. (Optional) Under "Advanced Settings" in your CircleCI repository settings turn on "Only build pull requests." While not necessary, this setting prevents separate Pantheon Multidev environment from being created for each commit. With this setting on, all created Multidevs will be named by pull request number and subsequent pushes to an open pull request will reuse the same Multidev environment.
 
 ### Examples
 
@@ -53,7 +53,7 @@ workflows:
     jobs:
     - pantheon/push
 orbs:
-  pantheon: pantheon-systems/pantheon@0.0.1
+  pantheon: pantheon-systems/pantheon@0.0.2
 ```
 
 Here is an example that compiles Sass in a separate job before pushing to Pantheon.
@@ -71,8 +71,14 @@ workflows:
         # jobs must be run.
         requires:
           - npmbuild_and_persist
+        # Because the checkout command is called from pre-steps, it should
+        # not be run inside the orb-defined steps.
         checkout: false
+        # Commands to run before the orb-defined steps.
         pre-steps:
+          # Perform a git checkout of the code from GitHub/Bitbucket so that
+          # custom commands (the rm below) can alter the code before it is
+          # pushed to Pantheon.
           - checkout
           # Attach this dist directory created in npmbuild_and_persist
           # which contains the compiled css.
@@ -88,7 +94,7 @@ workflows:
           - run: rm wp-content/themes/may2019/.gitignore
 
 orbs:
-  pantheon: pantheon-systems/pantheon@0.0.1
+  pantheon: pantheon-systems/pantheon@0.0.2
 jobs:
   # This job compiles Sass and then saves (persists) the directory
   # containing the compiled css for reuse in the pantheon/push job.
@@ -98,7 +104,7 @@ jobs:
     steps:
     - checkout
     - run:
-        name: install npm dependencies
+        name: install npm dependencies in a custom WordPress child theme
         command: cd wp-content/themes/may2019 && npm ci
     - run:
         name: Compile Sass
@@ -115,7 +121,7 @@ Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior 
 
 | parameter name | type    | default value | required | description                                                                                                                                                |
 |----------------|---------|---------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| checkout       | boolean | true          | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in a `pre-step` section. |  
+| checkout       | boolean | true          | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section. |
 
 ## Assumptions and Intended Audience
 
@@ -126,8 +132,8 @@ If you already have a mature CI discipline within your team this Orb may not pro
 ## Related Projects
 
 - [Terminus](https://pantheon.io/docs/terminus/) is the Pantheon command line tool. This Orb uses Terminus in order to do things like authenticate with Pantheon. As is mentioned in the set up steps above, you will need to supply a `TERMINUS_TOKEN` environment variable to CircleCI for authentication to work.
-- [Terminus Build Tools](https://github.com/pantheon-systems/terminus-build-tools-plugin) is a plugin for Terminus that encapsulates many Continuous Integration tasks. It relies you setting the machine name of your site as a `TERMINUS_SITE` environment variable in CircleCI for certain commands to function.
-- [Example Drops 8 Composer](https://github.com/pantheon-systems/example-drops-8-composer) is an example repository that shows a Composer-based Drupal 8 workflow flowing from GitHub to CircleCI to Pantheon. [It may soon incorporate this Orb](https://github.com/pantheon-systems/example-drops-8-composer/pull/245).
+- [Terminus Build Tools](https://github.com/pantheon-systems/terminus-build-tools-plugin) is a plugin for Terminus that encapsulates many Continuous Integration tasks. It relies on you setting the machine name of your site as a `TERMINUS_SITE` environment variable in CircleCI for certain commands to function.
+- [Example Drops 8 Composer](https://github.com/pantheon-systems/example-drops-8-composer) is an example repository that shows a Composer-based Drupal 8 workflow that goes from GitHub to CircleCI to Pantheon. [It may soon incorporate this Orb](https://github.com/pantheon-systems/example-drops-8-composer/pull/245).
 - [Example WordPress Composer](https://github.com/pantheon-systems/example-wordpress-composer) is the WordPress twin to Example Drops 8 Composer.
 
 ## Support
