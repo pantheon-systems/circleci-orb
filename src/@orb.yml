@@ -138,4 +138,4 @@ examples:
           jobs:
             - pantheon/push
       orbs:
-        pantheon: pantheon-systems/pantheon@dev:0.0.1
+        pantheon: pantheon-systems/pantheon@0.0.1
