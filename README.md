@@ -56,34 +56,57 @@ orbs:
   pantheon: pantheon-systems/pantheon@0.0.1
 ```
 
-Here is an example of that includes calling `composer install` before pushing to
-Pantheon.
+Here is an example that compiles Sass in a separate job before pushing to Pantheon.
 
 ```yml
-      version: 2.1
-      workflows:
-        version: 2
-        composer_install_and_push:
-          pre-steps:
-              - checkout
-              # Use --no-dev so that testing dependencies like phpunit are not
-              # pushed to Pantheon.
-              - run: composer -n install --optimize-autoloader --ignore-platform-reqs --no-dev
-              # prepare-for-pantheon is a command copied from
-              # https://github.com/pantheon-systems/example-drops-8-composer/blob/master/scripts/composer/ScriptHandler.php#L50
-              # It cuts the .gitignore file so that directories like Composer's
-              # vendor directory are no longer ignored and can be committed.
-              # It also removes .git directories that may have been brought down
-              # with dependencies that would cause them to be committed as
-              # submodules (which Pantheon does not support)
-              - run: composer prepare-for-pantheon
-          # Because checkout is called in the pre-steps it should not be called
-          # again in the Orb-defined steps.
-          checkout: false
-          jobs:
-            - pantheon/push
-      orbs:
-        pantheon: pantheon-systems/pantheon@0.0.1
+# See this example in use at https://github.com/stevector/wordpress-orb-demo
+version: 2.1
+workflows:
+  version: 2
+  compile_sass_and_push:
+    jobs:
+    - npmbuild_and_persist
+    - pantheon/push:
+        # This "requires" section tells CircleCI the order in which
+        # jobs must be run.
+        requires:
+          - npmbuild_and_persist
+        checkout: false
+        pre-steps:
+          - checkout
+          # Attach this dist directory created in npmbuild_and_persist
+          # which contains the compiled css.
+          - attach_workspace:
+              at: .
+          # The dist directory that holds the compiled Sass is git ignored.
+          # It needs to be committed on Pantheon.
+          # Removing this .gitignore file makes it available for committing.
+          # Pantheon's Composer examples use a more complicated
+          # technique of "cutting" the top level .gitignore
+          # file so that lines specifying build artifact directories are removed.
+          # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
+          - run: rm wp-content/themes/may2019/.gitignore
+
+orbs:
+  pantheon: pantheon-systems/pantheon@0.0.1
+jobs:
+  # This job compiles Sass and then saves (persists) the directory
+  # containing the compiled css for reuse in the pantheon/push job.
+  npmbuild_and_persist:
+    docker:
+    - image: node:10.15.3
+    steps:
+    - checkout
+    - run:
+        name: install npm dependencies
+        command: cd wp-content/themes/may2019 && npm ci
+    - run:
+        name: Compile Sass
+        command: cd wp-content/themes/may2019 && npm run build
+    - persist_to_workspace:
+        root: .
+        paths:
+        - wp-content/themes/may2019/dist
 ```
 
 ### Parameters
