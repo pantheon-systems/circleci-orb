@@ -9,9 +9,10 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      ADMIN_USERNAME: admin
+      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
       BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
+      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       checkout:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
@@ -57,7 +58,6 @@ jobs:
       - run:
           name: Checkout site repository from Pantheon
           command: |
-            export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
             # Ensure that there's a Pantheon repo locally. If one was not
             # restored from cache, clone it fresh.
             if [ ! -d "$PANTHEON_REPO_DIR/.git" ]; then
@@ -69,9 +69,10 @@ jobs:
             fi
 
             git fetch pantheon
-            REMOTE_REF_TO_ENV=$(git ls-remote pantheon | grep "refs/heads/$TERMINUS_ENV$") || echo "hmm, assigning an empty var returns an error."
-
-            if [ -n "$REMOTE_REF_TO_ENV" ]; then
+            
+            # If the current branch is on Pantheon, check it out.
+            # If it is not, checkout master and then make a new branch.
+            if git ls-remote pantheon | grep "refs/heads/$TERMINUS_ENV$" > /dev/null; then
               git checkout $TERMINUS_ENV
               git pull
             else
@@ -79,10 +80,11 @@ jobs:
               git pull
               git checkout -b $TERMINUS_ENV
             fi
+
       - save_cache:
           key: pantheon-repo-{{ .Branch }}
           paths:
-            - /tmp/pantheon_repo_for_$TERMINUS_SITE
+            - $PANTHEON_REPO_DIR
 
       - run:
           name: Delete old Multidevs to make space for a potential new one
@@ -91,7 +93,6 @@ jobs:
       - run:
           name: Copy code to the local clone of the Pantheon repository
           command: |
-              export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
               rsync -av --exclude='.git'  . $PANTHEON_REPO_DIR  --delete
               # For easier debugging, show what files have changed.
               git -C $PANTHEON_REPO_DIR status
@@ -99,7 +100,6 @@ jobs:
       - run:
           name: Commit code to Pantheon repository and push to Pantheon
           command: |
-              export PANTHEON_REPO_DIR="/tmp/pantheon_repo_for_$TERMINUS_SITE"
               # Create a new multidev site to test on
               terminus -n env:wake "$TERMINUS_SITE.dev"
               cd $PANTHEON_REPO_DIR
