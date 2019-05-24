@@ -19,16 +19,16 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
    * Sign in to [CircleCI](https://circleci.com/dashboard) and set up the repo for Circle builds.
    * In your local checkout of your code, create a file at `.circleci/config.yml`.
    * Copy this example into the `config.yml` file.
-   ```yml
-      version: 2.1
-      workflows:
-        version: 2
-        just_push:
-          jobs:
-            - pantheon/push
-      orbs:
+        ```yml
+        version: 2.1
+        workflows:
+          version: 2
+          just_push:
+              jobs:
+              - pantheon/push
+        orbs:
         pantheon: pantheon-systems/pantheon@0.0.1
-    ```
+        ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option.
 3. Set up SSH keys and environment variables.
@@ -46,14 +46,14 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
 Here is the simplest possible usage of this orb in a `.circleci/config.yml` file.
 
 ```yml
-      version: 2.1
-      workflows:
-        version: 2
-        just_push:
-          jobs:
-            - pantheon/push
-      orbs:
-        pantheon: pantheon-systems/pantheon@0.0.1
+version: 2.1
+workflows:
+  version: 2
+  just_push:
+    jobs:
+    - pantheon/push
+orbs:
+  pantheon: pantheon-systems/pantheon@0.0.1
 ```
 
 Here is an example of that includes calling `composer install` before pushing to
