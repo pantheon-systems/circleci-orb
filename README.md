@@ -34,6 +34,7 @@ orbs:
    * Terminus Token
    * Set TERMINUS_SITE
 4. (Optional) Disallowed paths in pantheon.yml
+5. (Optional) Only build pull requests
 
 
 ### Parameters
