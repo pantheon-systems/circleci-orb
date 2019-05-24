@@ -104,7 +104,7 @@ If you already have a mature CI discipline within your team this Orb may not pro
 
 - [Terminus](https://pantheon.io/docs/terminus/) is the Pantheon command line tool. This Orb uses Terminus in order to do things like authenticate with Pantheon. As is mentioned in the set up steps above, you will need to supply a `TERMINUS_TOKEN` environment variable to CircleCI for authentication to work.
 - [Terminus Build Tools](https://github.com/pantheon-systems/terminus-build-tools-plugin) is a plugin for Terminus that encapsulates many Continuous Integration tasks. It relies you setting the machine name of your site as a `TERMINUS_SITE` environment variable in CircleCI for certain commands to function.
-- [Example Drops 8 Composer](https://github.com/pantheon-systems/example-drops-8-composer) is an example repository that show a Composer-based Drupal 8 workflow flowing from GitHub to CircleCI to Pantheon. It will soon incorporate this Orb.
+- [Example Drops 8 Composer](https://github.com/pantheon-systems/example-drops-8-composer) is an example repository that shows a Composer-based Drupal 8 workflow flowing from GitHub to CircleCI to Pantheon. [It may soon incorporate this Orb](https://github.com/pantheon-systems/example-drops-8-composer/pull/245).
 - [Example WordPress Composer](https://github.com/pantheon-systems/example-wordpress-composer) is the WordPress twin to Example Drops 8 Composer.
 
 ## Support
