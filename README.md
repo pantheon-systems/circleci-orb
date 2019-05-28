@@ -29,7 +29,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
               jobs:
               - pantheon/push
         orbs:
-        pantheon: pantheon-systems/pantheon@0.0.1
+          pantheon: pantheon-systems/pantheon@0.0.1
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option.
