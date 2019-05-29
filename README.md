@@ -19,8 +19,9 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
    * Push the master branch (the code currently on your Pantheon Dev environment) to the newly created GitHub repo: `git push github master:master`
 2. Configure CircleCI for your repository.
    * Sign in to [CircleCI](https://circleci.com/dashboard) and set up the repo for Circle builds.
+    * Set up can be done at the URL `https://circleci.com/setup-project/gh/YOUR_USERNAME/YOUR_REPO`
    * In your local checkout of your code, create a file at `.circleci/config.yml`.
-   * Copy this example into the `config.yml` file.
+   * Copy this example into the `.circleci/config.yml` file.
         ```yml
         version: 2.1
         workflows:
@@ -36,11 +37,13 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
 3. Set up SSH keys and environment variables.
    * Pantheon requires SSH keys for performing git interactions. CircleCI needs a private key that matches a public key connected to your Pantheon account (or another account with access to the Pantheon site in question).
       * Create a new ssh key with `ssh-keygen -m PEM -t rsa -b 4096 -f /tmp/new_key_for_ci -N ''`.
+        * `pbcopy` is a command installed by default on MacOS systems. If you use a different operating system you may need to copy and paste the SSH key values manually. See the [Pantheon SSH key documentation](https://pantheon.io/docs/ssh-keys/) for more information on SSH key generation.
       * Copy  the newly created public key (`cat /tmp/new_key_for_ci.pub | pbcopy`) and [add it to your Pantheon account](https://pantheon.io/docs/ssh-keys/).
-      * Copy the private key (`cat /tmp/new_key_for_ci | pbcopy`) and add it to your CircleCI configuration by using the "SSH Permissions" settings. Set the hostname as "drush.in" and paste your private key into the text box.
+      * Copy the private key (`cat /tmp/new_key_for_ci | pbcopy`) and add it to your CircleCI configuration by using the "SSH Permissions" settings. Set the hostname as `drush.in` and paste your private key into the text box.
    * Under Environment Variables in your CircleCI settings add a variable for `TERMINUS_SITE` set to the machine name of your Pantheon site.
+    * The machine name of your site is simply the site name in all lowercase with spaces replaced by dashes. For example, `My CircleCI Orb Test` would be `my-circleci-orb-test`.
    * [Create a Terminus machine token using the Pantheon Dashboard](https://pantheon.io/docs/machine-tokens/). Add it as another environment variable in CircleCI named `TERMINUS_TOKEN`.
-   * Retrigger a build in CircleCI either by pushing a whitespace (or otherwise inocuous) change. This build should pass.
+   * Retrigger a build in CircleCI either by pushing a whitespace (or otherwise inocuous) change to your code on GitHub. This time, the build should pass.
 4. (Optional) Under "Advanced Settings" in your CircleCI repository settings turn on "Only build pull requests." While not necessary, this setting prevents separate Pantheon Multidev environment from being created for each commit. With this setting on, all created Multidevs will be named by pull request number and subsequent pushes to an open pull request will reuse the same Multidev environment.
 
 ### Examples
