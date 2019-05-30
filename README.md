@@ -13,9 +13,10 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
 
 ## Setting Up an Existing Pantheon Site To Use the `push` Job From This Orb
 
+0. First, make sure your Pantheon site has an initialized Live environment. If you are making a brand-new site, only the Dev environment will be present. Make the Test and Live environments because this Orb will copy the database and files from the Live environment to newly created Multidev environment (or the Dev environment when building on the `master` branch).
 1. Make a GitHub repo with the code from your Pantheon site.
    * Make a [new repo](https://github.com/new) on GitHub if you do not have one yet.
-   * Add the new GitHub repo as a remote to a local clone of your Pantheon site: `git remote add github git@github.com:YOUR_USERNAME/YOUR_REPO.git`
+   * Add the new GitHub repo as a remote to a local clone of your Pantheon site: `git remote add github git@github.com:YOUR_USERNAME/YOUR_REPO.git
    * Push the master branch (the code currently on your Pantheon Dev environment) to the newly created GitHub repo: `git push github master:master`
 2. Configure CircleCI for your repository.
    * Sign in to [CircleCI](https://circleci.com/dashboard) and set up the repo for Circle builds.
