@@ -44,7 +44,7 @@ jobs:
           name: Authenticate with Pantheon's CLI using a machine token
           command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
 
-      # This section is a convuluted way of ensure that there are not git
+      # This section is a convoluted way of ensure that there are not git
       # conflicts when pushing to Pantheon.
       # Rather than pushing the history from GitHub/BitBucket to Pantheon,
       # the Pantheon history is cloned to a tmp directory, changes are copied
@@ -100,12 +100,11 @@ jobs:
       - run:
           name: Commit code to Pantheon repository and push to Pantheon
           command: |
-              # Create a new multidev site to test on
-              terminus -n env:wake "$TERMINUS_SITE.dev"
               cd $PANTHEON_REPO_DIR
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.live" "$TERMINUS_ENV" --yes --clone-content
+              export COMMIT_MSG=$(git log -1 --pretty=%B)
+              terminus -n build:env:create "$TERMINUS_SITE.live" "$TERMINUS_ENV" --yes --clone-content --COMMIT_MSG="CI: $COMMIT_MSG"
       - run:
           name: Delete Multidev environments made for now-closed pull requests
           command: |
