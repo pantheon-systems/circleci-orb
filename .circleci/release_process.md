@@ -8,8 +8,7 @@ Every tag pushed to GitHub (through the releases interface or otherwise) trigger
 
 The exact tag name used in Git is the exact version name used on Circle so double and triple check that you are making a tag of the correct name given Semantic Version rules. See below for more details. There is [a pending issue](https://github.com/pantheon-systems/circleci-orb/issues/20) on this repo for considering a more robust release process that does not require the releaser to declare an exact tag name but instead know only whether it is major, minor, or patch.
 
-# Guidance on how to use Semantic Versioning.
-
+## Guidance on how to use Semantic Versioning.
 
 Examples of changes that would trigger a major version release.
 
