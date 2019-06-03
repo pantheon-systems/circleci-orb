@@ -22,7 +22,7 @@ Examples of changes that would trigger a major version release.
   * Adding jobs, commands, and optional parameters that do not fundamentally change the intended usage of the entire orb should trigger minor releases.
 * **What should trigger a patch release?**
   * [Semver.org says "when you make backwards-compatible bug fixes."](https://semver.org/).
-    * A bug is a mismatch between expectations and reality.
+    * Bug fixes.
     * Documentation additions and fixes.
     * Adding example usages.
 
