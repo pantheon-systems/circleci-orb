@@ -23,4 +23,23 @@ Examples of changes that would trigger a major version release.
   * Adding jobs, commands, and optional parameters that do not fundamentally change the intended usage of the entire Orb should trigger minor releases.
 * **What should trigger a patch release?**
   * [Semver.org says "when you make backwards-compatible bug fixes."](https://semver.org/).
-    * A bug is a mismatch between expectations and reality. For the purposes of releases in this 
+    * A bug is a mismatch between expectations and reality.
+
+## How do we know that a release is safe?
+
+In order to know that it is safe to tag the master branch for release, the orb needs to be tested. To do that, demonstration repositories on GitHub configured to use the orb switch to development versions.
+
+Currently this is a manual process. Steve Persch has used a mix of three repositories:
+
+* [stevector/wordpress-orb-demo](https://github.com/stevector/wordpress-orb-demo) is a simple WordPress site that uses the push job after a separate job compiles Sass in a child theme.
+* [stevector/stevector-composer](https://github.com/stevector/stevector-composer) is a composer-based wordpress repository.
+* [stevector/nerdologues-d8](https://github.com/stevector/nerdologues-d8) is a composer-based Drupal 8 repository.
+
+Here are example PRs that have manually set the above repos to use development releases of the orb:    * @TODO, more here
+
+* [Using a dev branch](https://github.com/stevector/nerdologues-d8/pull/347/files)
+* [Using an orb version made specifically for a single git commit](https://github.com/stevector/wordpress-orb-demo/pull/5/files)
+
+If recent changes to the orb change behavior specific to the master branch then one or more of these repositories needs to temporarily merge the usage of the dev orb into their master branch.
+
+There is [an open issue to further standardize and automate this process](https://github.com/pantheon-systems/circleci-orb/issues/2) and remove the dependency on Steve’s personal projects.
