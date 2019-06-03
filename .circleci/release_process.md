@@ -8,7 +8,7 @@ Every tag pushed to GitHub (through the releases interface or otherwise) trigger
 
 The exact tag name used in Git is the exact version name used as the version name in the CircleCI Orb Registry so double and triple check that you are making a tag of the correct name given Semantic Version rules. See below for more details. There is [a pending issue](https://github.com/pantheon-systems/circleci-orb/issues/20) on this repo for considering a more robust release process that does not require the releaser to declare an exact tag name but instead know only whether it is major, minor, or patch.
 
-## Guidance on how to use Semantic Versioning.
+## Guidance on how to use Semantic Versioning
 
 Examples of changes that would trigger a major version release.
 
@@ -26,7 +26,7 @@ Examples of changes that would trigger a major version release.
     * Documentation additions and fixes.
     * Adding example usages.
 
-## How do we know that a release is safe?
+## Testing Releases
 
 In order to know that it is safe to tag the master branch for release, the orb needs to be tested. To do that, demonstration repositories on GitHub configured to use the orb switch to development versions.
 
@@ -46,3 +46,14 @@ If recent changes to the orb change behavior specific to the master branch then 
 There is [an open issue to further standardize and automate this process](https://github.com/pantheon-systems/circleci-orb/issues/2) and remove the dependency on Steve’s personal projects.
 
 ## Writing Release Notes
+
+See the release notes for version [0.1.0](https://github.com/pantheon-systems/circleci-orb/releases/tag/0.1.0) for an example. Release notes should contain bulleted list items for the the pull requests that were merged. Thank each person who contributed.
+
+## Final Steps
+
+Before making the release, update all examples to point to the about-to-be created version number. The files that need to be updated include:
+
+* `README.md`
+* `src/@orb.yml`
+
+The pull request that makes this change does not need to be included in release notes.
