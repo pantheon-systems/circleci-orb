@@ -21,6 +21,7 @@ workflows:
       # CircleCI recommends a more complex workflow for promoting
       # dev Orbs instead of directly creating tags.
       # It might be worthwhile to switch to that workflow eventually.
+      # @See https://github.com/pantheon-systems/circleci-orb/issues/20
       # For the time being, I (Steve Persch) would prefer to make tags
       # using the GitHub UI and let this step publish an Orb version with
       # the same name as the tag.
