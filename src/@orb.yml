@@ -137,7 +137,7 @@ examples:
           jobs:
             - pantheon/push
       orbs:
-        pantheon: pantheon-systems/pantheon@0.0.2
+        pantheon: pantheon-systems/pantheon@0.1.0
 
   compile_sass_and_push:
     description: |
@@ -171,7 +171,7 @@ examples:
                 # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
                 - run: rm wp-content/themes/may2019/.gitignore
       orbs:
-        pantheon: pantheon-systems/pantheon@0.0.2
+        pantheon: pantheon-systems/pantheon@0.1.0
       jobs:
         # This job compiles Sass and then saves (persists) the directory
         # containing the compiled css for reuse in the pantheon/push job.
