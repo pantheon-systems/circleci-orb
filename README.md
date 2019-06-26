@@ -38,8 +38,8 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
 3. Set up SSH keys and environment variables.
    * Pantheon requires SSH keys for performing git interactions. CircleCI needs a private key that matches a public key connected to your Pantheon account (or another account with access to the Pantheon site in question).
       * Create a new SSH key on your local machine in a tmp directory with `ssh-keygen -m PEM -t rsa -b 4096 -f /tmp/new_key_for_ci -N ''`.
-        * `pbcopy` is a command installed by default on MacOS systems. If you use a different operating system you may need to copy and paste the SSH key values manually. See the [Pantheon SSH key documentation](https://pantheon.io/docs/ssh-keys/) for more information on SSH key generation.
       * Copy  the newly created public key (`cat /tmp/new_key_for_ci.pub | pbcopy`) and [add it to your Pantheon account](https://pantheon.io/docs/ssh-keys/).
+        * `pbcopy` is a command installed by default on MacOS systems. If you use a different operating system you may need to copy and paste the SSH key values manually. See the [Pantheon SSH key documentation](https://pantheon.io/docs/ssh-keys/) for more information on SSH key generation.
       * Copy the private key (`cat /tmp/new_key_for_ci | pbcopy`) and add it to your CircleCI configuration by using the "SSH Permissions" settings. Set the hostname as `drush.in` and paste your private key into the text box.
    * Under Environment Variables in your CircleCI settings add a variable for `TERMINUS_SITE` set to the machine name of your Pantheon site.
     * The machine name of your site is simply the site name in all lowercase with spaces replaced by dashes. For example, `My CircleCI Orb Test` would be `my-circleci-orb-test`.
