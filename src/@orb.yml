@@ -101,7 +101,14 @@ jobs:
           name: Commit code to Pantheon repository and push to Pantheon
           command: |
               export COMMIT_MSG=$(git log -1 --pretty=%B)
+              # get the ORIGIN REPO because automated pull request commenting
+              # in build:env:create needs it.
+              # see https://github.com/pantheon-systems/circleci-orb/issues/5
+              # @todo, make a better way for this to happen that doesn't rely
+              # on setting a misleading "origin" repo.
+              export ORIGIN_REPO=$(git remote get-url origin)
               cd $PANTHEON_REPO_DIR
+              git remote add origin $ORIGIN_REPO
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
               terminus -n build:env:create "$TERMINUS_SITE.live" "$TERMINUS_ENV" --yes --clone-content --message="CI: $COMMIT_MSG"
