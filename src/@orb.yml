@@ -19,7 +19,7 @@ jobs:
         default: true
         type: boolean
       env_create_max_time:
-        description: "The maximum amount of time to wait for Pantheon environment creation. This parameter maps to CircleCI's native 'no_output_timeout' option."
+        description: "The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native 'no_output_timeout' option."
         default: "10m"
         type: string
 
