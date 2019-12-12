@@ -97,7 +97,7 @@ jobs:
       - run:
           name: Copy code to the local clone of the Pantheon repository
           command: |
-              rsync -av --exclude='.git'  . $PANTHEON_REPO_DIR  --delete
+              rsync -av --exclude='.git'  << parameters.directory_to_push >> $PANTHEON_REPO_DIR  --delete
               # For easier debugging, show what files have changed.
               git -C $PANTHEON_REPO_DIR status
 
