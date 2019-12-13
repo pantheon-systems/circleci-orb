@@ -24,7 +24,6 @@ jobs:
         type: string
 
     steps:
-
       - when:
           condition: <<parameters.checkout>>
           steps:
