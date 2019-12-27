@@ -15,7 +15,7 @@ jobs:
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       directory_to_push:
-        description: "Which directory within the repository should be pushed to Pantheon. Defaults to the git root: '.' Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage an backend CMS on Pantheon and a decoupled frontend deployed elsewhere."
+        description: "The directory within the repository to push to Pantheon. Defaults to the git root: '.' Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage a backend CMS on Pantheon and a decoupled frontend deployed elsewhere."
         default: "."
         type: string
       checkout:
