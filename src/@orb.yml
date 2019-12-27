@@ -14,6 +14,10 @@ jobs:
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
+      directory_to_push:
+        description: "The directory within the repository to push to Pantheon. Defaults to the git root: '.' Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage a backend CMS on Pantheon and a decoupled frontend deployed elsewhere, set this param to the name of the directory that holds your `pantheon.yml` file."
+        default: "."
+        type: string
       checkout:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
         default: true
@@ -101,7 +105,7 @@ jobs:
       - run:
           name: Copy code to the local clone of the Pantheon repository
           command: |
-              rsync -av --exclude='.git'  . $PANTHEON_REPO_DIR  --delete
+              rsync -av --exclude='.git'  << parameters.directory_to_push >> $PANTHEON_REPO_DIR  --delete
               # For easier debugging, show what files have changed.
               git -C $PANTHEON_REPO_DIR status
 
