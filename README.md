@@ -124,9 +124,11 @@ jobs:
 
 Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior of the job. At this time the `push` job takes only one parameter.
 
-| parameter name | type    | default value | required | description                                                                                                                                                |
-|----------------|---------|---------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| checkout       | boolean | true          | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section. |
+| parameter name             | type    | default value | required | description                                                                                                                                                                |
+|----------------------------|---------|---------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| checkout                   | boolean | true          | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section.              |
+| env_create_max_time        | string  | 10m           | no       | The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native 'no_output_timeout' option." |
+| terminus_clone_env         | string  | live          | no       | The source environment from which the database and uploaded files are cloned.                                                                                              |
 
 ## Assumptions and Intended Audience
 

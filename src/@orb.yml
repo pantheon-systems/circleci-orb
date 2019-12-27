@@ -23,7 +23,7 @@ jobs:
         default: "10m"
         type: string
       terminus_clone_env:
-        description: "The environment used for cloning sites and database (default live) [live|test|dev]"
+        description: "The source environment from which the database and uploaded files are cloned."
         default: "live"
         type: string
 
