@@ -31,7 +31,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
               jobs:
               - pantheon/push
         orbs:
-          pantheon: pantheon-systems/pantheon@0.1.0
+          pantheon: pantheon-systems/pantheon@0.2.0
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option to allow Orbs written by those other than CircleCI to be used within your organization. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
@@ -58,7 +58,7 @@ workflows:
     jobs:
     - pantheon/push
 orbs:
-  pantheon: pantheon-systems/pantheon@0.1.0
+  pantheon: pantheon-systems/pantheon@0.2.0
 ```
 
 Here is an example that compiles Sass in a separate job before pushing to Pantheon.
@@ -99,7 +99,7 @@ workflows:
           - run: rm wp-content/themes/may2019/.gitignore
 
 orbs:
-  pantheon: pantheon-systems/pantheon@0.1.0
+  pantheon: pantheon-systems/pantheon@0.2.0
 jobs:
   # This job compiles Sass and then saves (persists) the directory
   # containing the compiled css for reuse in the pantheon/push job.
