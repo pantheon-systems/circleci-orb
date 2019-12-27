@@ -18,8 +18,12 @@ jobs:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
         default: true
         type: boolean
-    steps:
+      env_create_max_time:
+        description: "The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native 'no_output_timeout' option."
+        default: "10m"
+        type: string
 
+    steps:
       - when:
           condition: <<parameters.checkout>>
           steps:
@@ -99,6 +103,7 @@ jobs:
 
       - run:
           name: Commit code to Pantheon repository and push to Pantheon
+          no_output_timeout: <<parameters.env_create_max_time>>
           command: |
               export COMMIT_MSG=$(git log -1 --pretty=%B)
               cd $PANTHEON_REPO_DIR
