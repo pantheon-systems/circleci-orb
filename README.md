@@ -34,7 +34,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
           pantheon: pantheon-systems/pantheon@0.1.0
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
-   * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
+   * Set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option to allow Orbs written by those other than CircleCI to be used within your organization. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
 3. Set up SSH keys and environment variables.
    * Pantheon requires SSH keys for performing git interactions. CircleCI needs a private key that matches a public key connected to your Pantheon account (or another account with access to the Pantheon site in question).
       * Create a new SSH key on your local machine in a tmp directory with `ssh-keygen -m PEM -t rsa -b 4096 -f /tmp/new_key_for_ci -N ''`.
