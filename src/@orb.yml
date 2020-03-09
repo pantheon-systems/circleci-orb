@@ -1,7 +1,9 @@
 version: 2.1
 description: |
-  Use CircleCI to push code to Pantheon Dev and Multidev Environments. Maintained at https://github.com/pantheon-systems/circleci-orb
-
+  Use CircleCI to push code to Pantheon Dev and Multidev Environments.
+display:
+  source_url: https://github.com/pantheon-systems/circleci-orb
+  home_url: https://pantheon.io/
 jobs:
   push:
     docker:
