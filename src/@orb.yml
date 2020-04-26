@@ -7,7 +7,7 @@ display:
 jobs:
   push:
     docker:
-    - image: quay.io/pantheon-public/build-tools-ci:5.x
+    - image: quay.io/pantheon-public/build-tools-ci:6.x
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
