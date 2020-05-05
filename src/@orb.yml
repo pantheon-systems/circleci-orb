@@ -24,6 +24,10 @@ jobs:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
         default: true
         type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars? Set to false if you set variables in 'presteps'"
+        default: true
+        type: boolean
       env_create_max_time:
         description: "The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native 'no_output_timeout' option."
         default: "10m"
@@ -49,9 +53,12 @@ jobs:
       # will be the Multidev environment pr-$CI_PULL_REQUEST
       # In all other cases a new Pantheon multidev will be created specifically
       # for this build number, ci-$CIRCLE_BUILD_NUM.
-      - run:
-          name: Derive additional environment variables
-          command: /build-tools-ci/scripts/set-environment
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive additional environment variables
+                command: /build-tools-ci/scripts/set-environment
 
       # Later commands require being signed in to Pantheon.
       - run:
