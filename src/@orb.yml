@@ -25,7 +25,7 @@ jobs:
         default: true
         type: boolean
       set_env_vars:
-        description: "Should this job run a script to set env vars? Set to false if you set variables in 'presteps'"
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
         default: true
         type: boolean
       env_create_max_time:
