@@ -2,8 +2,9 @@
 
 [![CircleCI](https://circleci.com/gh/pantheon-systems/circleci-orb.svg?style=svg)](https://circleci.com/gh/pantheon-systems/circleci-orb)
 
-This reposistory contains the source code for Pantheon's [CircleCI Orb](https://circleci.com/docs/2.0/orb-intro/).
-Orbs are a way of encapsulating sharable CircleCI jobs and commands.
+This reposistory contains the source code for Pantheon's [CircleCI Orb](https://circleci.com/docs/2.0/orb-intro/). Orbs are a way of encapsulating sharable CircleCI jobs and commands.
+
+This is a forked version of Pantheon's Orb for GUOA's use that alters the original by removing the `--clone-content` tag from the **"Commit code to Pantheon repository and push to Pantheon"** job of the build. Removing this tag prevents cloning the Live environment's database and files to a Multidev with each push after the Multidev's initialization. 
 
 This repository provides a job to push code from GitHub or BitBucket to [Pantheon](https://pantheon.io) through CircleCI.
 
@@ -31,10 +32,10 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
               jobs:
               - pantheon/push
         orbs:
-          pantheon: pantheon-systems/pantheon@0.2.0
+          pantheon: pantheon-systems/pantheon@0.1.0
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
-   * Set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option to allow Orbs written by those other than CircleCI to be used within your organization. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
+   * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
 3. Set up SSH keys and environment variables.
    * Pantheon requires SSH keys for performing git interactions. CircleCI needs a private key that matches a public key connected to your Pantheon account (or another account with access to the Pantheon site in question).
       * Create a new SSH key on your local machine in a tmp directory with `ssh-keygen -m PEM -t rsa -b 4096 -f /tmp/new_key_for_ci -N ''`.
@@ -58,7 +59,7 @@ workflows:
     jobs:
     - pantheon/push
 orbs:
-  pantheon: pantheon-systems/pantheon@0.2.0
+  pantheon: pantheon-systems/pantheon@0.1.0
 ```
 
 Here is an example that compiles Sass in a separate job before pushing to Pantheon.
@@ -99,7 +100,7 @@ workflows:
           - run: rm wp-content/themes/may2019/.gitignore
 
 orbs:
-  pantheon: pantheon-systems/pantheon@0.2.0
+  pantheon: pantheon-systems/pantheon@0.1.0
 jobs:
   # This job compiles Sass and then saves (persists) the directory
   # containing the compiled css for reuse in the pantheon/push job.
@@ -122,14 +123,11 @@ jobs:
 
 ### Parameters
 
-Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior of the job.
+Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior of the job. At this time the `push` job takes only one parameter.
 
-| parameter name             | type    | default value | required | description                                                                                                                                                                |
-|----------------------------|---------|---------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `checkout`                 | boolean | `true`        | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section.              |
-| `env_create_max_time`      | string  | `"10m"`       | no       | The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native `no_output_timeout` option." |
-| `terminus_clone_env`       | string  | `"live"`      | no       | The source environment from which the database and uploaded files are cloned.                                                                                              |
-| `directory_to_push`        | string  | `"."`         | no       | The directory within the repository to push to Pantheon. Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage a backend CMS on Pantheon and a decoupled frontend deployed elsewhere, set this param to the name of the directory that holds your `pantheon.yml` file. |
+| parameter name | type    | default value | required | description                                                                                                                                                |
+|----------------|---------|---------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| checkout       | boolean | true          | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section. |
 
 ## Assumptions and Intended Audience
 
