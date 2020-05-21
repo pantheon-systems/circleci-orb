@@ -7,7 +7,7 @@ display:
 jobs:
   push:
     docker:
-    - image: quay.io/pantheon-public/build-tools-ci:5.x
+    - image: quay.io/pantheon-public/build-tools-ci:6.x
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -22,6 +22,10 @@ jobs:
         type: string
       checkout:
         description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
         default: true
         type: boolean
       env_create_max_time:
@@ -49,9 +53,12 @@ jobs:
       # will be the Multidev environment pr-$CI_PULL_REQUEST
       # In all other cases a new Pantheon multidev will be created specifically
       # for this build number, ci-$CIRCLE_BUILD_NUM.
-      - run:
-          name: Derive additional environment variables
-          command: /build-tools-ci/scripts/set-environment
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive additional environment variables
+                command: /build-tools-ci/scripts/set-environment
 
       # Later commands require being signed in to Pantheon.
       - run:
