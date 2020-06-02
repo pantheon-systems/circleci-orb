@@ -8,12 +8,12 @@ executors:
   default:
     description: "Default executor to use whrn running this orb's jobs"
     parameters:
-      resource-class:
+      resource_class:
         type: string
         default: "medium"
     docker:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
-    resource_class: <<parameters.resource-class>>
+    resource_class: <<parameters.resource_class>>
 jobs:
   push:
     working_directory: ~/sitedir
@@ -24,7 +24,7 @@ jobs:
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
-      resource-class:
+      resource_class:
         description: "Override the resource class used by the job"
         default: "medium"
         type: string
@@ -51,7 +51,7 @@ jobs:
 
     executor:
       name: default
-      resource-class: <<parameters.resource-class>>
+      resource_class: <<parameters.resource_class>>
 
     steps:
       - when:
