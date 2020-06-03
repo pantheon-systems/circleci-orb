@@ -6,7 +6,7 @@ display:
   home_url: https://pantheon.io/
 executors:
   default:
-    description: "Default executor to use whrn running this orb's jobs"
+    description: "Default executor to use when running this orb's jobs"
     parameters:
       resource_class:
         type: string
