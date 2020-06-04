@@ -4,10 +4,18 @@ description: |
 display:
   source_url: https://github.com/pantheon-systems/circleci-orb
   home_url: https://pantheon.io/
+executors:
+  default:
+    description: "Default executor to use when running this orb's jobs"
+    parameters:
+      resource_class:
+        type: string
+        default: "medium"
+    docker:
+      - image: quay.io/pantheon-public/build-tools-ci:6.x
+    resource_class: <<parameters.resource_class>>
 jobs:
   push:
-    docker:
-    - image: quay.io/pantheon-public/build-tools-ci:6.x
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
@@ -16,6 +24,10 @@ jobs:
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
       directory_to_push:
         description: "The directory within the repository to push to Pantheon. Defaults to the git root: '.' Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage a backend CMS on Pantheon and a decoupled frontend deployed elsewhere, set this param to the name of the directory that holds your `pantheon.yml` file."
         default: "."
@@ -36,6 +48,10 @@ jobs:
         description: "The source environment from which the database and uploaded files are cloned."
         default: "live"
         type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
 
     steps:
       - when:
