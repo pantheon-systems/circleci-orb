@@ -53,9 +53,6 @@ jobs:
         default: true
         type: boolean
 
-        --clone-content
-
-
     executor:
       name: default
       resource_class: <<parameters.resource_class>>
