@@ -144,7 +144,7 @@ jobs:
           command: |
               export COMMIT_MSG=$(git log -1 --pretty=%B)
               cd $PANTHEON_REPO_DIR
-              if [ -n "<<parameters.clone_content>>" ] ; then
+              if [ "true" = "<<parameters.clone_content>>" ] ; then
                 export CLONE_CONTENT="--clone-content"
               else
                 export CLONE_CONTENT=""
