@@ -178,7 +178,6 @@ jobs:
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
               terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG"
-
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
