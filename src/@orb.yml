@@ -92,40 +92,23 @@ jobs:
       # (rsync) to the Pantheon repo to be committed on top of history that can
       # then push with no chance of a merge conflict (other than a race
       # condition caused by a push going to Pantheon from elsewhere)
-      - restore_cache:
-            keys:
-              - pantheon-repo-{{ .Branch }}
-              - pantheon-repo-
       - run:
           name: Checkout site repository from Pantheon
           command: |
-            # Ensure that there's a Pantheon repo locally. If one was not
-            # restored from cache, clone it fresh.
-            if [ ! -d "$PANTHEON_REPO_DIR/.git" ]; then
-              mkdir $PANTHEON_REPO_DIR
-              cd $PANTHEON_REPO_DIR
-              git init
-              git remote add pantheon $(terminus connection:info $TERMINUS_SITE.dev --field=git_url)
-              git remote -v
-            fi
-
-            git fetch pantheon
-            
+            mkdir $PANTHEON_REPO_DIR
+            cd $PANTHEON_REPO_DIR
+            git init
+            git remote add pantheon $(terminus connection:info $TERMINUS_SITE.dev --field=git_url)
             # If the current branch is on Pantheon, check it out.
             # If it is not, checkout master and then make a new branch.
-            if git ls-remote pantheon | grep "refs/heads/$TERMINUS_ENV$" > /dev/null; then
-              git checkout $TERMINUS_ENV
-              git pull
+            if git ls-remote pantheon | grep "refs/heads/${TERMINUS_ENV}$" > /dev/null; then
+                git fetch --force pantheon "${TERMINUS_ENV}:remotes/pantheon/${TERMINUS_ENV}"  --no-tags  --depth=1
+                git checkout ${TERMINUS_ENV}
             else
+              git fetch --force pantheon master --no-tags  --depth=1
               git checkout master
-              git pull
-              git checkout -b $TERMINUS_ENV
+              git checkout -b ${TERMINUS_ENV}
             fi
-
-      - save_cache:
-          key: pantheon-repo-{{ .Branch }}
-          paths:
-            - $PANTHEON_REPO_DIR
 
       # terminus build:env:delete can take around a minute.
       # So only run it when the current build needs to
