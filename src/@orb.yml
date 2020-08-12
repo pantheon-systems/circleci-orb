@@ -125,9 +125,35 @@ jobs:
           paths:
             - $PANTHEON_REPO_DIR
 
+      # terminus build:env:delete can take around a minute.
+      # So only run it when the current build needs to
+      # make a new Multidev environment.
       - run:
-          name: Delete old Multidevs to make space for a potential new one
-          command: terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
+          name: Delete old Multidevs if this build needs to create a new one
+          command: |
+            if [[ $TERMINUS_ENV = ci-* || $TERMINUS_ENV = pr-*   ]]
+            then
+                echo "May need to delete old ci- or pr- environments to make room for this one"
+                echo "Getting list of all environments"
+                export ENV_LIST=$(terminus env:list $TERMINUS_SITE --field=id)
+                echo "Checking if current environment is in list of existing environments"
+                if [[ $(echo "${ENV_LIST}" | grep -x ${TERMINUS_ENV})  ]]
+                then
+                    echo "${TERMINUS_ENV} found in the list of environments"
+                    exit 0
+                else
+                    echo "${TERMINUS_ENV} not found in the list of environments."
+                    echo "Running clean-up script to delete old pr- environments"
+                    terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
+                    if [[ $TERMINUS_ENV = ci-*  ]]
+                    then
+                        echo "Running clean-up script to delete old ci- environments"
+                        terminus -n build:env:delete:ci "$TERMINUS_SITE" --keep=2 --yes
+                    else
+                        echo "Skipping deletion of ci- envs"
+                    fi
+                fi
+            fi
 
       - run:
           name: Copy code to the local clone of the Pantheon repository
@@ -149,18 +175,7 @@ jobs:
               fi
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --no-git-force --message="CI: $COMMIT_MSG"
-      - run:
-          name: Delete Multidev environments made for now-closed pull requests
-          command: |
-            # Because this step is slow it should be run more than necessary.
-            if [[ $CI_BRANCH != "master" ]] ; then
-              exit 0
-            fi
-            # Delete old multidev environments associated with a PR that has been
-            # merged or closed.
-            terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
-
+              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes --no-git-force $CLONE_CONTENT --message="CI: $COMMIT_MSG"
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
