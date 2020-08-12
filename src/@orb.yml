@@ -19,8 +19,6 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-force-option
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
