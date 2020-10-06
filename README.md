@@ -32,7 +32,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
               jobs:
               - pantheon/push
         orbs:
-          pantheon: pantheon-systems/pantheon@0.1.0
+          pantheon: pantheon-systems/pantheon@0.5.1
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Until this Orb is released as a 1.0.0, you will need to set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
@@ -59,7 +59,7 @@ workflows:
     jobs:
     - pantheon/push
 orbs:
-  pantheon: pantheon-systems/pantheon@0.1.0
+  pantheon: pantheon-systems/pantheon@0.5.1
 ```
 
 Here is an example that compiles Sass in a separate job before pushing to Pantheon.
@@ -100,7 +100,7 @@ workflows:
           - run: rm wp-content/themes/may2019/.gitignore
 
 orbs:
-  pantheon: pantheon-systems/pantheon@0.1.0
+  pantheon: pantheon-systems/pantheon@0.5.1
 jobs:
   # This job compiles Sass and then saves (persists) the directory
   # containing the compiled css for reuse in the pantheon/push job.
@@ -128,6 +128,7 @@ Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior 
 | parameter name             | type    | default value | required | description                                                                                                                                                                |
 |----------------------------|---------|---------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `checkout`                 | boolean | `true`        | no       | Determines whether a git checkout will be the first command called by the job. Set to false if you have already called "checkout" in the `pre-steps` section.              |
+| `clone_content`           | boolean | `true`        | no       | Determines whether or not every build will re-clone content from the environment set in terminus_clone_env. Set to false if cloning the database and files means builds are taking too long.         |
 | `env_create_max_time`      | string  | `"10m"`       | no       | The maximum amount of time to wait for Pantheon environment creation (terminus -n build:env:create). This parameter maps to CircleCI's native `no_output_timeout` option." |
 | `resource_class`      | string  | `"medium"`       | no       | The [size of the container](https://circleci.com/product/features/resource-classes/) can be increased for memory-intensive build steps or decreased to reduce billing impact. |
 | `terminus_clone_env`       | string  | `"live"`      | no       | The source environment from which the database and uploaded files are cloned.                                                                                              |
