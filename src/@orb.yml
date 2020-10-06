@@ -50,7 +50,7 @@ jobs:
         type: string
       clone_content:
         description: "Determines whether or not every build will re-clone content from the environment set in terminus_clone_env. Set to false if cloning the database and files means builds are taking too long."
-        default: true
+        default: false
         type: boolean
 
     executor:
@@ -177,17 +177,7 @@ jobs:
               fi
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes --message="CI: $COMMIT_MSG"
-      - run:
-          name: Delete Multidev environments made for now-closed pull requests
-          command: |
-            # Because this step is slow it should be run more than necessary.
-            if [[ $CI_BRANCH != "master" ]] ; then
-              exit 0
-            fi
-            # Delete old multidev environments associated with a PR that has been
-            # merged or closed.
-            terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
+              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG"
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
