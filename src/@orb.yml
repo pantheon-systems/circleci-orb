@@ -106,6 +106,9 @@ jobs:
               cd $PANTHEON_REPO_DIR
               git init
               git remote add pantheon $(terminus connection:info $TERMINUS_SITE.dev --field=git_url)
+              # Make the BitBucket or GitHub url be the origin so that Build Tools sets
+              # that url appropriately in the metadata file.
+              git remote add origin $CIRCLE_REPOSITORY_URL
               git remote -v
             fi
 
