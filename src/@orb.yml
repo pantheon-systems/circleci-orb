@@ -184,6 +184,14 @@ jobs:
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
+          name: Run WP Search and Replace
+          command: |
+              # This command will domain references in DB to current multidev environment
+              # Currently hardcoded to ensure terminus command works as such
+              terminus wp guoa-wordpress-multisite.pr-225 -- search-replace live-guoa-wordpress-multisite.pantheonsite.io pr-225-guoa-wordpress-multisite.pantheonsite.io  --network --url=live-guoa-wordpress-multisite.pantheonsite.io
+      # @todo, Check back with CircleCI DevRel team. They mentioned possibly
+      # adding a CircleCI-maintained Orb step to do this concept.
+      - run:
           name: Copy environment variables to persist to workspace for use in subsequent jobs.
           command: cp $BASH_ENV bash_env.txt
       - persist_to_workspace:
