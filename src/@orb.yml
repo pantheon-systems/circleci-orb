@@ -145,10 +145,12 @@ jobs:
                 if [[ $(echo "${ENV_LIST}" | grep -x ${TERMINUS_ENV})  ]]
                 then
                     echo "${TERMINUS_ENV} found in the list of environments"
+                    export INITIAL_MULTIDEV_BUILD=true
                     exit 0
                 else
                     echo "${TERMINUS_ENV} not found in the list of environments."
                     echo "Running clean-up script to delete old pr- environments"
+                    INITIAL_MULTIDEV_BUILD=false
                     terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
                     if [[ $TERMINUS_ENV = ci-*  ]]
                     then
@@ -186,9 +188,15 @@ jobs:
       - run:
           name: Run WP Search and Replace
           command: |
-              # This command will domain references in DB to current multidev environment
-              # Currently hardcoded to ensure terminus command works as such
-              terminus wp guoa-wordpress-multisite.pr-225 -- search-replace live-guoa-wordpress-multisite.pantheonsite.io pr-225-guoa-wordpress-multisite.pantheonsite.io  --network --url=live-guoa-wordpress-multisite.pantheonsite.io
+              # This command will update domain references in DB to current multidev environment if multidev was created in this build
+              echo "testing if variable persists: ${INITIAL_MULTIDEV_BUILD}"
+              if [ "$INITIAL_MULTIDEV_BUILD" == true -a $TERMINUS_ENV = pr-* ]
+              then
+                  terminus wp guoa-wordpress-multisite.pr-$PR_NUMBER -- search-replace live-guoa-wordpress-multisite.pantheonsite.io pr-$PR_NUMBER-guoa-wordpress-multisite.pantheonsite.io  --network --url=live-guoa-wordpress-multisite.pantheonsite.io
+              else
+                  echo "Multidev existed before this build or this is a push to master so WP search and replace does not need to run"
+                  exit 0
+              fi
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
