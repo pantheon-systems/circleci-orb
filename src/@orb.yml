@@ -145,12 +145,12 @@ jobs:
                 if [[ $(echo "${ENV_LIST}" | grep -x ${TERMINUS_ENV})  ]]
                 then
                     echo "${TERMINUS_ENV} found in the list of environments"
-                    export INITIAL_MULTIDEV_BUILD=true
+                    echo 'export INITIAL_MULTIDEV_BUILD="false"' >> $BASH_ENV
                     exit 0
                 else
                     echo "${TERMINUS_ENV} not found in the list of environments."
                     echo "Running clean-up script to delete old pr- environments"
-                    INITIAL_MULTIDEV_BUILD=false
+                    echo 'export INITIAL_MULTIDEV_BUILD="true"' >> $BASH_ENV
                     terminus -n build:env:delete:pr "$TERMINUS_SITE" --yes
                     if [[ $TERMINUS_ENV = ci-*  ]]
                     then
@@ -189,8 +189,8 @@ jobs:
           name: Run WP Search and Replace
           command: |
               # This command will update domain references in DB to current multidev environment if multidev was created in this build
-              echo "testing if variable persists: ${INITIAL_MULTIDEV_BUILD}"
-              if [ "$INITIAL_MULTIDEV_BUILD" == true -a $TERMINUS_ENV = pr-* ]
+              echo "testing if variable persists: $(INITIAL_MULTIDEV_BUILD)"
+              if [ $INITIAL_MULTIDEV_BUILD == "true" -a $TERMINUS_ENV = pr-* ]
               then
                   terminus wp guoa-wordpress-multisite.pr-$PR_NUMBER -- search-replace live-guoa-wordpress-multisite.pantheonsite.io pr-$PR_NUMBER-guoa-wordpress-multisite.pantheonsite.io  --network --url=live-guoa-wordpress-multisite.pantheonsite.io
               else
