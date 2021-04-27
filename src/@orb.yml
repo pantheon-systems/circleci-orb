@@ -19,8 +19,6 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
@@ -180,7 +178,7 @@ jobs:
               fi
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG"
+              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes --no-git-force $CLONE_CONTENT --message="CI: $COMMIT_MSG"
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
