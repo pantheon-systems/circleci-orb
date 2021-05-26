@@ -189,8 +189,7 @@ jobs:
           name: Run WP Search and Replace
           command: |
               # This command will update domain references in DB to current multidev environment if multidev was created in this build
-              echo "testing if variable persists: $(INITIAL_MULTIDEV_BUILD)"
-              if [ $INITIAL_MULTIDEV_BUILD == "true" -a $TERMINUS_ENV = pr-* ]
+              if [[ "$INITIAL_MULTIDEV_BUILD" == "true" && $TERMINUS_ENV == pr-* ]]
               then
                   terminus wp guoa-wordpress-multisite.pr-$PR_NUMBER -- search-replace live-guoa-wordpress-multisite.pantheonsite.io pr-$PR_NUMBER-guoa-wordpress-multisite.pantheonsite.io  --network --url=live-guoa-wordpress-multisite.pantheonsite.io
               else
