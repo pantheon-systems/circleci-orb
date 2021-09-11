@@ -68,10 +68,10 @@ jobs:
                 name: Derive additional environment variables
                 command: /build-tools-ci/scripts/set-environment
 
-      # Later commands require being signed in to Pantheon.
-      - run:
-          name: Authenticate with Pantheon's CLI using a machine token
-          command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
+      - restore_cache:
+          keys:
+            - pantheon-repo-{{ .Branch }}
+            - pantheon-repo-
 
       - run:
           name: Run static tests
@@ -257,6 +257,94 @@ jobs:
           root: .
           paths:
             - bash_env.txt
+
+  behat_tests:
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
+      BUILD_TOOLS_VERSION: dev-option-for-no-force
+      TERM: dumb
+      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+      behat_initialize_script:
+        description: "Script to initialize behat tests"
+        default: "./.ci/test/behat/initialize"
+        type: string
+      behat_run_script:
+        description: "Script to run behat tests"
+        default: "./.ci/test/behat/run"
+        type: string
+      behat_clean_script:
+        description: "Script to clean behat tests"
+        default: "./.ci/test/behat/cleanup"
+        type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      # Set environment variables by calling a script from the container.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
+      # Perhaps the most important variable here is TERMINUS_ENV which
+      # determines which Pantheon environment is targeted.
+      # When on the master branch in GitHub, the target environment on Pantheon
+      # will be Dev.
+      # If the current commit is part of a pull request, the target environment
+      # will be the Multidev environment pr-$CI_PULL_REQUEST
+      # In all other cases a new Pantheon multidev will be created specifically
+      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive additional environment variables
+                command: /build-tools-ci/scripts/set-environment
+
+      - restore_cache:
+          keys:
+            - pantheon-repo-{{ .Branch }}
+            - pantheon-repo-
+
+      - run:
+          name: Initialize behat tests
+          command: << parameters.behat_initialize_script >>
+
+      - run:
+          name: Run behat tests
+          command: << parameters.behat_run_script >>
+
+      - run:
+          name: Initialize behat tests
+          command: << parameters.behat_clean_script >>
+          when: always
+
+      - save_cache:
+          key: pantheon-repo-{{ .Branch }}
+          paths:
+            - $PANTHEON_REPO_DIR
+
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
 
 examples:
   just_push:
