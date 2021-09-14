@@ -65,7 +65,7 @@ jobs:
           condition: <<parameters.set_env_vars>>
           steps:
             - run:
-                name: Derive additional environment variables
+                name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
 
       - restore_cache:
@@ -144,7 +144,7 @@ jobs:
           condition: <<parameters.set_env_vars>>
           steps:
             - run:
-                name: Derive additional environment variables
+                name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
 
       # Later commands require being signed in to Pantheon.
@@ -258,6 +258,78 @@ jobs:
           paths:
             - bash_env.txt
 
+  visual_regression:
+    docker:
+      - image: backstopjs/backstopjs:4.1.9
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
+      BUILD_TOOLS_VERSION: dev-option-for-no-force
+      TERM: dumb
+      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+      vrt_run_script:
+        description: "Script to run vrt"
+        default: "./.ci/test/visual-regression/run"
+        type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      - attach_workspace:
+          at: /tmp/workspace
+
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive environment variables
+                command: |
+                  cp /tmp/workspace/bash_env.txt $BASH_ENV
+                  echo "export CI_BUILD_URL='${CIRCLE_BUILD_URL}'" >> $BASH_ENV
+                  echo "export CI_NODE_INDEX='${CIRCLE_NODE_INDEX}'" >> $BASH_ENV
+                  echo "export CI_REPOSITORY_URL='${CIRCLE_REPOSITORY_URL}'" >> $BASH_ENV
+                  echo "export ARTIFACTS_DIR_URL='${CIRCLE_BUILD_URL}/artifacts/${CIRCLE_NODE_INDEX}/artifacts'" >> $BASH_ENV
+                  source $BASH_ENV
+
+      - restore_cache:
+          keys:
+            - pantheon-repo-{{ .Branch }}
+            - pantheon-repo-
+
+      - run:
+          name: Run visual regression tests
+          command: << parameters.vrt_run_script >>
+
+      - save_cache:
+          key: pantheon-repo-{{ .Branch }}
+          paths:
+            - $PANTHEON_REPO_DIR
+
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
+
   behat_tests:
     working_directory: ~/sitedir
     environment:
@@ -316,7 +388,7 @@ jobs:
           condition: <<parameters.set_env_vars>>
           steps:
             - run:
-                name: Derive additional environment variables
+                name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
 
       - restore_cache:
