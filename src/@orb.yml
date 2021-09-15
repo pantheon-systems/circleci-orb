@@ -1,6 +1,6 @@
 version: 2.1
 description: |
-  Use CircleCI to push code to Pantheon Dev and Multidev Environments.
+  Use CircleCI to push code to Pantheon Dev and Multidev Environments and run some tests.
 display:
   source_url: https://github.com/pantheon-systems/circleci-orb
   home_url: https://pantheon.io/
@@ -14,15 +14,13 @@ executors:
     docker:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
+# @todo Add caching for jobs?
 jobs:
   static_tests:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
-      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -51,16 +49,8 @@ jobs:
           steps:
             - checkout
 
-      # Set environment variables by calling a script from the container.
-      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
-      # Perhaps the most important variable here is TERMINUS_ENV which
-      # determines which Pantheon environment is targeted.
-      # When on the master branch in GitHub, the target environment on Pantheon
-      # will be Dev.
-      # If the current commit is part of a pull request, the target environment
-      # will be the Multidev environment pr-$CI_PULL_REQUEST
-      # In all other cases a new Pantheon multidev will be created specifically
-      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
           condition: <<parameters.set_env_vars>>
           steps:
@@ -68,19 +58,9 @@ jobs:
                 name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
 
-      - restore_cache:
-          keys:
-            - pantheon-repo-{{ .Branch }}
-            - pantheon-repo-
-
       - run:
           name: Run static tests
           command: << parameters.static_tests_script >>
-
-      - save_cache:
-          key: pantheon-repo-{{ .Branch }}
-          paths:
-            - $PANTHEON_REPO_DIR
 
   push:
     working_directory: ~/sitedir
@@ -90,6 +70,8 @@ jobs:
       BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
+      NOTIFY: 'scripts/github/add-commit-comment {project} {sha} "Created multidev environment [{site}#{env}]({dashboard-url})." {site-url}'
+      ADMIN_USERNAME: admin
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -130,16 +112,8 @@ jobs:
           steps:
             - checkout
 
-      # Set environment variables by calling a script from the container.
-      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
-      # Perhaps the most important variable here is TERMINUS_ENV which
-      # determines which Pantheon environment is targeted.
-      # When on the master branch in GitHub, the target environment on Pantheon
-      # will be Dev.
-      # If the current commit is part of a pull request, the target environment
-      # will be the Multidev environment pr-$CI_PULL_REQUEST
-      # In all other cases a new Pantheon multidev will be created specifically
-      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
           condition: <<parameters.set_env_vars>>
           steps:
@@ -264,10 +238,7 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
-      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -312,19 +283,9 @@ jobs:
                   echo "export ARTIFACTS_DIR_URL='${CIRCLE_BUILD_URL}/artifacts/${CIRCLE_NODE_INDEX}/artifacts'" >> $BASH_ENV
                   source $BASH_ENV
 
-      - restore_cache:
-          keys:
-            - pantheon-repo-{{ .Branch }}
-            - pantheon-repo-
-
       - run:
           name: Run visual regression tests
           command: << parameters.vrt_run_script >>
-
-      - save_cache:
-          key: pantheon-repo-{{ .Branch }}
-          paths:
-            - $PANTHEON_REPO_DIR
 
       - store_artifacts:
           path: /tmp/artifacts
@@ -334,10 +295,7 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
-      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -374,27 +332,14 @@ jobs:
           steps:
             - checkout
 
-      # Set environment variables by calling a script from the container.
-      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
-      # Perhaps the most important variable here is TERMINUS_ENV which
-      # determines which Pantheon environment is targeted.
-      # When on the master branch in GitHub, the target environment on Pantheon
-      # will be Dev.
-      # If the current commit is part of a pull request, the target environment
-      # will be the Multidev environment pr-$CI_PULL_REQUEST
-      # In all other cases a new Pantheon multidev will be created specifically
-      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
           condition: <<parameters.set_env_vars>>
           steps:
             - run:
                 name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
-
-      - restore_cache:
-          keys:
-            - pantheon-repo-{{ .Branch }}
-            - pantheon-repo-
 
       - run:
           name: Initialize behat tests
@@ -409,11 +354,6 @@ jobs:
           command: << parameters.behat_clean_script >>
           when: always
 
-      - save_cache:
-          key: pantheon-repo-{{ .Branch }}
-          paths:
-            - $PANTHEON_REPO_DIR
-
       - store_artifacts:
           path: /tmp/artifacts
           destination: artifacts
@@ -422,10 +362,7 @@ jobs:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
-      PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -450,16 +387,8 @@ jobs:
           steps:
             - checkout
 
-      # Set environment variables by calling a script from the container.
-      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
-      # Perhaps the most important variable here is TERMINUS_ENV which
-      # determines which Pantheon environment is targeted.
-      # When on the master branch in GitHub, the target environment on Pantheon
-      # will be Dev.
-      # If the current commit is part of a pull request, the target environment
-      # will be the Multidev environment pr-$CI_PULL_REQUEST
-      # In all other cases a new Pantheon multidev will be created specifically
-      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
           condition: <<parameters.set_env_vars>>
           steps:
