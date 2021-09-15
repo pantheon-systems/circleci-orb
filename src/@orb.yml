@@ -15,6 +15,7 @@ executors:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
 # @todo Add caching for jobs?
+# @todo Add build_php job? Nope! Add as an example before the push to pantheon.
 jobs:
   static_tests:
     working_directory: ~/sitedir
@@ -417,39 +418,66 @@ examples:
           jobs:
             - pantheon/push
       orbs:
-        pantheon: pantheon-systems/pantheon@0.1.0
+        pantheon: pantheon-systems/pantheon@0.2.0
 
-  compile_sass_and_push:
+  full_example:
     description: |
-      Compile Sass in a separate job before pushing to Pantheon. See this example in use at https://github.com/stevector/wordpress-orb-demo
+      Compile Sass in a separate job before pushing to Pantheon. Also run tests. See this example in use at https://github.com/kporras07/circleci-orb-demo
     usage:
-      # See this example in use at https://github.com/stevector/wordpress-orb-demo
       version: 2.1
       workflows:
         version: 2
-        compile_sass_and_push:
+        build_deploy_and_test:
           jobs:
-          - npmbuild_and_persist
-          - pantheon/push:
-              # This "requires" section tells CircleCI the order in which
-              # jobs must be run.
-              requires:
-                - npmbuild_and_persist
-              checkout: false
-              pre-steps:
-                - checkout
-                # Attach this dist directory created in npmbuild_and_persist
-                # which contains the compiled css.
-                - attach_workspace:
-                    at: .
-                # The dist directory that holds the compiled Sass is git ignored.
-                # It needs to be committed on Pantheon.
-                # Removing this .gitignore file makes it available for committing.
-                # Pantheon's Composer examples use a more complicated
-                # technique of "cutting" the top level .gitignore
-                # file so that lines specifying build artifact directories are removed.
-                # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
-                - run: rm wp-content/themes/may2019/.gitignore
+            - pantheon/static_tests
+            - npmbuild_and_persist
+            - pantheon/push:
+                # This "requires" section tells CircleCI the order in which
+                # jobs must be run.
+                requires:
+                  - npmbuild_and_persist
+                  - pantheon/static_tests
+                # Because the checkout command is called from pre-steps, it should
+                # not be run inside the orb-defined steps.
+                checkout: false
+                pre-steps:
+                  # Perform a git checkout of the code from GitHub/Bitbucket so that
+                  # custom commands (the rm below) can alter the code before it is
+                  # pushed to Pantheon.
+                  - checkout
+                  # Attach this dist directory created in npmbuild_and_persist
+                  # which contains the compiled css.
+                  - attach_workspace:
+                      at: .
+                  # The dist directory that holds the compiled Sass is git ignored.
+                  # It needs to be committed on Pantheon.
+                  # Removing this .gitignore file makes it available for committing.
+                  # Pantheon's Composer examples use a more complicated
+                  # technique of "cutting" the top level .gitignore
+                  # file so that lines specifying build artifact directories are removed.
+                  # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
+                  - run: rm web/themes/custom/default/.gitignore
+            - pantheon/visual_regression:
+                requires:
+                  - pantheon/push
+                filters:
+                    branches:
+                      ignore:
+                        - master
+            - pantheon/behat_tests:
+                requires:
+                  - pantheon/visual_regression
+
+        scheduled_update_check:
+          triggers:
+            - schedule:
+                cron: "10 21 * * *"
+                filters:
+                  branches:
+                    only:
+                      - master
+          jobs:
+            - pantheon/composer_lock_updater
       orbs:
         pantheon: pantheon-systems/pantheon@0.2.0
       jobs:
@@ -457,16 +485,16 @@ examples:
         # containing the compiled css for reuse in the pantheon/push job.
         npmbuild_and_persist:
           docker:
-          - image: node:10.15.3
+            - image: node:12.16.1
           steps:
-          - checkout
-          - run:
-              name: install npm dependencies in a custom WordPress child theme
-              command: cd wp-content/themes/may2019 && npm ci
-          - run:
-              name: Compile Sass
-              command: cd wp-content/themes/may2019 && npm run build
-          - persist_to_workspace:
-              root: .
-              paths:
-              - wp-content/themes/may2019/dist
+            - checkout
+            - run:
+                name: install npm dependencies in a custom Drupal child theme
+                command: cd web/themes/custom/default && yarn install
+            - run:
+                name: Compile Sass
+                command: cd web/themes/custom/default && yarn production && rm -rf web/themes/custom/default/node_modules
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - web/themes/custom/default
