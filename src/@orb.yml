@@ -15,6 +15,9 @@ executors:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
 # @todo Add caching for jobs?
+# @todo: Does this really need test and live envs initialized? Why? FIXED. CONFIRM IT WORKS!
+# @todo: WP behat_tests failing.
+# @todo: Github comment does not work because different commit sha.
 jobs:
   static_tests:
     working_directory: ~/sitedir
@@ -93,7 +96,7 @@ jobs:
         type: string
       terminus_clone_env:
         description: "The source environment from which the database and uploaded files are cloned."
-        default: "live"
+        default: "dev"
         type: string
       clone_content:
         description: "Determines whether or not every build will re-clone content from the environment set in terminus_clone_env. Set to false if cloning the database and files means builds are taking too long."
