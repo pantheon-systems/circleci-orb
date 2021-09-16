@@ -15,9 +15,8 @@ executors:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
 # @todo Add caching for jobs?
-# @todo: Does this really need test and live envs initialized? Why? FIXED. CONFIRM IT WORKS!
-# @todo: WP behat_tests failing.
-# @todo: Github comment does not work because different commit sha.
+# @todo: WP behat_tests failing. NOT ONLY IN THE ORB.
+
 jobs:
   static_tests:
     working_directory: ~/sitedir
@@ -220,9 +219,15 @@ jobs:
               else
                 export CLONE_CONTENT=""
               fi
+              if [ ! -z $CI_PULL_REQUEST ] ; then
+                PR_ID=${CI_PULL_REQUEST##*/}
+                export PR_ID_ARG="--pr-id=$PR_ID"
+              else
+                export PR_ID_ARG=""
+              fi
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG" --no-git-force
+              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG" $PR_ID_ARG --no-git-force
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
