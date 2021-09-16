@@ -14,7 +14,6 @@ executors:
     docker:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
-# @todo Add caching for jobs?
 # @todo: WP behat_tests failing. NOT ONLY IN THE ORB.
 
 jobs:
@@ -51,6 +50,11 @@ jobs:
           steps:
             - checkout
 
+      - restore_cache:
+          keys:
+            - composer-cache-{{ checksum "composer.lock" }}
+            - composer-cache-
+
       # Set TERMINUS_ENV and related environment variables.
       # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
@@ -63,6 +67,11 @@ jobs:
       - run:
           name: Run static tests
           command: << parameters.static_tests_script >>
+
+      - save_cache:
+          key: composer-cache-{{ checksum "composer.lock" }}
+          paths:
+            - ~/.composer/cache
 
   push:
     working_directory: ~/sitedir
@@ -338,6 +347,11 @@ jobs:
           steps:
             - checkout
 
+      - restore_cache:
+          keys:
+            - composer-cache-{{ checksum "composer.lock" }}
+            - composer-cache-
+
       # Set TERMINUS_ENV and related environment variables.
       # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
@@ -359,6 +373,11 @@ jobs:
           name: Cleanup behat tests
           command: << parameters.behat_clean_script >>
           when: always
+
+      - save_cache:
+          key: composer-cache-{{ checksum "composer.lock" }}
+          paths:
+            - ~/.composer/cache
 
       - store_artifacts:
           path: /tmp/artifacts
