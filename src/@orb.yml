@@ -14,7 +14,6 @@ executors:
     docker:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
-# @todo: WP behat_tests failing. NOT ONLY IN THE ORB.
 
 jobs:
   static_tests:
