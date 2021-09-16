@@ -31,7 +31,7 @@ Those can be copied in one command using the [Terminus Build Tools Plugin](https
               jobs:
               - pantheon/push
         orbs:
-          pantheon: pantheon-systems/pantheon@0.5.2
+          pantheon: pantheon-systems/pantheon@0.6.0
         ```
    * Commit and push the file to GitHub. CircleCI will build attempt to run the workflow but it will return an error message because the steps below have not yet been completed. Turning failing red builds into passing green builds is part of the joy of CI.
    * Set the "[Allow Uncertified Orbs](https://circleci.com/docs/2.0/orbs-faq/#using-3rd-party-orbs)" option to allow Orbs written by those other than CircleCI to be used within your organization. For GitHub users this can be done at `https://circleci.com/gh/organizations/YOUR_USERNAME_OR_ORGNAME/settings#security`
@@ -64,60 +64,81 @@ orbs:
 Here is an example that compiles Sass in a separate job before pushing to Pantheon.
 
 ```yml
-# See this example in use at https://github.com/stevector/wordpress-orb-demo
 version: 2.1
 workflows:
   version: 2
-  compile_sass_and_push:
+  build_deploy_and_test:
     jobs:
-    - npmbuild_and_persist
-    - pantheon/push:
-        # This "requires" section tells CircleCI the order in which
-        # jobs must be run.
-        requires:
-          - npmbuild_and_persist
-        # Because the checkout command is called from pre-steps, it should
-        # not be run inside the orb-defined steps.
-        checkout: false
-        # Commands to run before the orb-defined steps.
-        pre-steps:
-          # Perform a git checkout of the code from GitHub/Bitbucket so that
-          # custom commands (the rm below) can alter the code before it is
-          # pushed to Pantheon.
-          - checkout
-          # Attach this dist directory created in npmbuild_and_persist
-          # which contains the compiled css.
-          - attach_workspace:
-              at: .
-          # The dist directory that holds the compiled Sass is git ignored.
-          # It needs to be committed on Pantheon.
-          # Removing this .gitignore file makes it available for committing.
-          # Pantheon's Composer examples use a more complicated
-          # technique of "cutting" the top level .gitignore
-          # file so that lines specifying build artifact directories are removed.
-          # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
-          - run: rm wp-content/themes/may2019/.gitignore
-
+      - pantheon/static_tests
+      - npmbuild_and_persist
+      - pantheon/push:
+          # This "requires" section tells CircleCI the order in which
+          # jobs must be run.
+          requires:
+            - npmbuild_and_persist
+            - pantheon/static_tests
+          # Because the checkout command is called from pre-steps, it should
+          # not be run inside the orb-defined steps.
+          checkout: false
+          pre-steps:
+            # Perform a git checkout of the code from GitHub/Bitbucket so that
+            # custom commands (the rm below) can alter the code before it is
+            # pushed to Pantheon.
+            - checkout
+            # Attach this dist directory created in npmbuild_and_persist
+            # which contains the compiled css.
+            - attach_workspace:
+                at: .
+            # The dist directory that holds the compiled Sass is git ignored.
+            # It needs to be committed on Pantheon.
+            # Removing this .gitignore file makes it available for committing.
+            # Pantheon's Composer examples use a more complicated
+            # technique of "cutting" the top level .gitignore
+            # file so that lines specifying build artifact directories are removed.
+            # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
+            - run: rm web/themes/custom/default/.gitignore
+            # Optional: Run a script to build needed stuff if you are not using IC or if you have further needs.
+            - run: ./.ci/build/php
+      - pantheon/visual_regression:
+          requires:
+            - pantheon/push
+          filters:
+              branches:
+                ignore:
+                  - master
+      - pantheon/behat_tests:
+          requires:
+            - pantheon/visual_regressi
+  scheduled_update_check:
+    triggers:
+      - schedule:
+          cron: "0 21 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - pantheon/composer_lock_updater
 orbs:
-  pantheon: pantheon-systems/pantheon@0.5.2
+  pantheon: pantheon-systems/pantheon@0.2.0
 jobs:
   # This job compiles Sass and then saves (persists) the directory
   # containing the compiled css for reuse in the pantheon/push job.
   npmbuild_and_persist:
     docker:
-    - image: node:10.15.3
+      - image: node:12.16.1
     steps:
-    - checkout
-    - run:
-        name: install npm dependencies in a custom WordPress child theme
-        command: cd wp-content/themes/may2019 && npm ci
-    - run:
-        name: Compile Sass
-        command: cd wp-content/themes/may2019 && npm run build
-    - persist_to_workspace:
-        root: .
-        paths:
-        - wp-content/themes/may2019/dist
+      - checkout
+      - run:
+          name: install npm dependencies in a custom Drupal child theme
+          command: cd web/themes/custom/default && yarn install
+      - run:
+          name: Compile Sass
+          command: cd web/themes/custom/default && yarn production && rm -rf web/themes/custom/default/node_modules
+      - persist_to_workspace:
+          root: .
+          paths:
+            - web/themes/custom/default
 ```
 
 ### Parameters
@@ -133,6 +154,11 @@ Jobs from CircleCI Orbs can take parameters (variables) that alter the behavior 
 | `terminus_clone_env`       | string  | `"live"`      | no       | The source environment from which the database and uploaded files are cloned.                                                                                              |
 | `directory_to_push`        | string  | `"."`         | no       | The directory within the repository to push to Pantheon. Use this setting if you have a more complex repo structure that puts your Pantheon root in a deeper directory. For instance, if you are using a monorepo to manage a backend CMS on Pantheon and a decoupled frontend deployed elsewhere, set this param to the name of the directory that holds your `pantheon.yml` file. |
 | `set_env_vars`       | boolean  | `true`      | no       | Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'                                                |
+| `static_tests_script`| string | `"./.ci/test/static/run"` | no | Script to run static tests. Based on "Example Drops 8 Composer" or "Example Wordpress Composer" repos |
+| `vrt_run_script`| string | `"./.ci/test/visual-regression/run"` | no | Script to run visual regression tests. Based on "Example Drops 8 Composer" or "Example Wordpress Composer" repos |
+| `behat_initialize_script`| string | `"./.ci/test/behat/initialize"` | no | Script to prepare behat tests. Based on "Example Drops 8 Composer" or "Example Wordpress Composer" repos |
+| `behat_run_script`| string | `"./.ci/test/behat/run"` | no | Script to run behat tests. Based on "Example Drops 8 Composer" or "Example Wordpress Composer" repos |
+| `behat_clean_script`| string | `"./.ci/test/behat/cleanup"` | no | Script to cleanup behat tests. Based on "Example Drops 8 Composer" or "Example Wordpress Composer" repos |
 
 ## Assumptions and Intended Audience
 
