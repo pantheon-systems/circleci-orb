@@ -1,6 +1,6 @@
 version: 2.1
 description: |
-  Use CircleCI to push code to Pantheon Dev and Multidev Environments.
+  Use CircleCI to push code to Pantheon Dev and Multidev Environments and run some tests.
 display:
   source_url: https://github.com/pantheon-systems/circleci-orb
   home_url: https://pantheon.io/
@@ -14,15 +14,72 @@ executors:
     docker:
       - image: quay.io/pantheon-public/build-tools-ci:6.x
     resource_class: <<parameters.resource_class>>
+
 jobs:
+  static_tests:
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      TERM: dumb
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+      static_tests_script:
+        description: "Script to run static tests"
+        default: "./.ci/test/static/run"
+        type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      - restore_cache:
+          keys:
+            - composer-cache-{{ checksum "composer.lock" }}
+            - composer-cache-
+
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive environment variables
+                command: /build-tools-ci/scripts/set-environment
+
+      - run:
+          name: Run static tests
+          command: << parameters.static_tests_script >>
+
+      - save_cache:
+          key: composer-cache-{{ checksum "composer.lock" }}
+          paths:
+            - ~/.composer/cache
+
   push:
     working_directory: ~/sitedir
     environment:
       TZ: "/usr/share/zoneinfo/America/Los_Angeles"
-      # @todo, remove this variable https://github.com/pantheon-systems/circleci-orb/issues/7
-      BUILD_TOOLS_VERSION: dev-option-for-no-force
       TERM: dumb
       PANTHEON_REPO_DIR: "/tmp/pantheon_repo"
+      NOTIFY: 'scripts/github/add-commit-comment {project} {sha} "Created multidev environment [{site}#{env}]({dashboard-url})." {site-url}'
+      ADMIN_USERNAME: admin
     parameters:
       resource_class:
         description: "Override the resource class used by the job"
@@ -46,7 +103,7 @@ jobs:
         type: string
       terminus_clone_env:
         description: "The source environment from which the database and uploaded files are cloned."
-        default: "live"
+        default: "dev"
         type: string
       clone_content:
         description: "Determines whether or not every build will re-clone content from the environment set in terminus_clone_env. Set to false if cloning the database and files means builds are taking too long."
@@ -63,21 +120,13 @@ jobs:
           steps:
             - checkout
 
-      # Set environment variables by calling a script from the container.
-      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/5.x/scripts/set-environment
-      # Perhaps the most important variable here is TERMINUS_ENV which
-      # determines which Pantheon environment is targeted.
-      # When on the master branch in GitHub, the target environment on Pantheon
-      # will be Dev.
-      # If the current commit is part of a pull request, the target environment
-      # will be the Multidev environment pr-$CI_PULL_REQUEST
-      # In all other cases a new Pantheon multidev will be created specifically
-      # for this build number, ci-$CIRCLE_BUILD_NUM.
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
       - when:
           condition: <<parameters.set_env_vars>>
           steps:
             - run:
-                name: Derive additional environment variables
+                name: Derive environment variables
                 command: /build-tools-ci/scripts/set-environment
 
       # Later commands require being signed in to Pantheon.
@@ -178,9 +227,15 @@ jobs:
               else
                 export CLONE_CONTENT=""
               fi
+              if [ ! -z $CI_PULL_REQUEST ] ; then
+                PR_ID=${CI_PULL_REQUEST##*/}
+                export PR_ID_ARG="--pr-id=$PR_ID"
+              else
+                export PR_ID_ARG=""
+              fi
               # This command will commit any changed files and push to Pantheon.
               # New multidevs will be created as necessary.
-              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG"
+              terminus -n build:env:create "$TERMINUS_SITE.<< parameters.terminus_clone_env >>" "$TERMINUS_ENV" --yes $CLONE_CONTENT --message="CI: $COMMIT_MSG" $PR_ID_ARG --no-git-force
       # @todo, Check back with CircleCI DevRel team. They mentioned possibly
       # adding a CircleCI-maintained Orb step to do this concept.
       - run:
@@ -190,6 +245,190 @@ jobs:
           root: .
           paths:
             - bash_env.txt
+
+  visual_regression:
+    docker:
+      - image: backstopjs/backstopjs:4.1.9
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      TERM: dumb
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+      vrt_run_script:
+        description: "Script to run vrt"
+        default: "./.ci/test/visual-regression/run"
+        type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      - attach_workspace:
+          at: /tmp/workspace
+
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive environment variables
+                command: |
+                  cp /tmp/workspace/bash_env.txt $BASH_ENV
+                  echo "export CI_BUILD_URL='${CIRCLE_BUILD_URL}'" >> $BASH_ENV
+                  echo "export CI_NODE_INDEX='${CIRCLE_NODE_INDEX}'" >> $BASH_ENV
+                  echo "export CI_REPOSITORY_URL='${CIRCLE_REPOSITORY_URL}'" >> $BASH_ENV
+                  echo "export ARTIFACTS_DIR_URL='${CIRCLE_BUILD_URL}/artifacts/${CIRCLE_NODE_INDEX}/artifacts'" >> $BASH_ENV
+                  source $BASH_ENV
+
+      - run:
+          name: Run visual regression tests
+          command: << parameters.vrt_run_script >>
+
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
+
+  behat_tests:
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      TERM: dumb
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+      behat_initialize_script:
+        description: "Script to initialize behat tests"
+        default: "./.ci/test/behat/initialize"
+        type: string
+      behat_run_script:
+        description: "Script to run behat tests"
+        default: "./.ci/test/behat/run"
+        type: string
+      behat_clean_script:
+        description: "Script to clean behat tests"
+        default: "./.ci/test/behat/cleanup"
+        type: string
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      - restore_cache:
+          keys:
+            - composer-cache-{{ checksum "composer.lock" }}
+            - composer-cache-
+
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive environment variables
+                command: /build-tools-ci/scripts/set-environment
+
+      - run:
+          name: Initialize behat tests
+          command: << parameters.behat_initialize_script >>
+
+      - run:
+          name: Run behat tests
+          command: << parameters.behat_run_script >>
+
+      - run:
+          name: Cleanup behat tests
+          command: << parameters.behat_clean_script >>
+          when: always
+
+      - save_cache:
+          key: composer-cache-{{ checksum "composer.lock" }}
+          paths:
+            - ~/.composer/cache
+
+      - store_artifacts:
+          path: /tmp/artifacts
+          destination: artifacts
+
+  composer_lock_updater:
+    working_directory: ~/sitedir
+    environment:
+      TZ: "/usr/share/zoneinfo/America/Los_Angeles"
+      TERM: dumb
+    parameters:
+      resource_class:
+        description: "Override the resource class used by the job"
+        default: "medium"
+        type: string
+      checkout:
+        description: "Should this job checkout your repository as the first step? Set to false if you are calling 'checkout' in 'pre-steps'"
+        default: true
+        type: boolean
+      set_env_vars:
+        description: "Should this job run a script to set env vars like TERMINUS_ENV? Set to false if you set variables in 'pre-steps'"
+        default: true
+        type: boolean
+
+    executor:
+      name: default
+      resource_class: <<parameters.resource_class>>
+
+    steps:
+      - when:
+          condition: <<parameters.checkout>>
+          steps:
+            - checkout
+
+      # Set TERMINUS_ENV and related environment variables.
+      # https://github.com/pantheon-systems/docker-build-tools-ci/blob/6.x/scripts/set-environment
+      - when:
+          condition: <<parameters.set_env_vars>>
+          steps:
+            - run:
+                name: Derive environment variables
+                command: /build-tools-ci/scripts/set-environment
+
+      - run:
+          name: Authenticate with Terminus
+          command: terminus -n auth:login --machine-token="$TERMINUS_TOKEN"
+
+      - run:
+          name: run composer lock updater
+          command: set -e && terminus project:clu $TERMINUS_SITE
+
+
 examples:
   just_push:
     description: |
@@ -202,39 +441,68 @@ examples:
           jobs:
             - pantheon/push
       orbs:
-        pantheon: pantheon-systems/pantheon@0.1.0
+        pantheon: pantheon-systems/pantheon@0.2.0
 
-  compile_sass_and_push:
+  full_example:
     description: |
-      Compile Sass in a separate job before pushing to Pantheon. See this example in use at https://github.com/stevector/wordpress-orb-demo
+      Compile Sass in a separate job before pushing to Pantheon. Also run tests. See this example in use at https://github.com/kporras07/circleci-orb-demo
     usage:
-      # See this example in use at https://github.com/stevector/wordpress-orb-demo
       version: 2.1
       workflows:
         version: 2
-        compile_sass_and_push:
+        build_deploy_and_test:
           jobs:
-          - npmbuild_and_persist
-          - pantheon/push:
-              # This "requires" section tells CircleCI the order in which
-              # jobs must be run.
-              requires:
-                - npmbuild_and_persist
-              checkout: false
-              pre-steps:
-                - checkout
-                # Attach this dist directory created in npmbuild_and_persist
-                # which contains the compiled css.
-                - attach_workspace:
-                    at: .
-                # The dist directory that holds the compiled Sass is git ignored.
-                # It needs to be committed on Pantheon.
-                # Removing this .gitignore file makes it available for committing.
-                # Pantheon's Composer examples use a more complicated
-                # technique of "cutting" the top level .gitignore
-                # file so that lines specifying build artifact directories are removed.
-                # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
-                - run: rm wp-content/themes/may2019/.gitignore
+            - pantheon/static_tests
+            - npmbuild_and_persist
+            - pantheon/push:
+                # This "requires" section tells CircleCI the order in which
+                # jobs must be run.
+                requires:
+                  - npmbuild_and_persist
+                  - pantheon/static_tests
+                # Because the checkout command is called from pre-steps, it should
+                # not be run inside the orb-defined steps.
+                checkout: false
+                pre-steps:
+                  # Perform a git checkout of the code from GitHub/Bitbucket so that
+                  # custom commands (the rm below) can alter the code before it is
+                  # pushed to Pantheon.
+                  - checkout
+                  # Attach this dist directory created in npmbuild_and_persist
+                  # which contains the compiled css.
+                  - attach_workspace:
+                      at: .
+                  # The dist directory that holds the compiled Sass is git ignored.
+                  # It needs to be committed on Pantheon.
+                  # Removing this .gitignore file makes it available for committing.
+                  # Pantheon's Composer examples use a more complicated
+                  # technique of "cutting" the top level .gitignore
+                  # file so that lines specifying build artifact directories are removed.
+                  # https://github.com/pantheon-systems/example-drops-8-composer/blob/670ae310c601dabbb7b35411ff3e08e4b1fac7a3/composer.json#L67
+                  - run: rm web/themes/custom/default/.gitignore
+                  # Optional: Run a script to build needed stuff if you are not using IC or if you have further needs.
+                  - run: ./.ci/build/php
+            - pantheon/visual_regression:
+                requires:
+                  - pantheon/push
+                filters:
+                    branches:
+                      ignore:
+                        - master
+            - pantheon/behat_tests:
+                requires:
+                  - pantheon/visual_regression
+
+        scheduled_update_check:
+          triggers:
+            - schedule:
+                cron: "10 21 * * *"
+                filters:
+                  branches:
+                    only:
+                      - master
+          jobs:
+            - pantheon/composer_lock_updater
       orbs:
         pantheon: pantheon-systems/pantheon@0.2.0
       jobs:
@@ -242,16 +510,16 @@ examples:
         # containing the compiled css for reuse in the pantheon/push job.
         npmbuild_and_persist:
           docker:
-          - image: node:10.15.3
+            - image: node:12.16.1
           steps:
-          - checkout
-          - run:
-              name: install npm dependencies in a custom WordPress child theme
-              command: cd wp-content/themes/may2019 && npm ci
-          - run:
-              name: Compile Sass
-              command: cd wp-content/themes/may2019 && npm run build
-          - persist_to_workspace:
-              root: .
-              paths:
-              - wp-content/themes/may2019/dist
+            - checkout
+            - run:
+                name: install npm dependencies in a custom Drupal child theme
+                command: cd web/themes/custom/default && yarn install
+            - run:
+                name: Compile Sass
+                command: cd web/themes/custom/default && yarn production && rm -rf web/themes/custom/default/node_modules
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - web/themes/custom/default
