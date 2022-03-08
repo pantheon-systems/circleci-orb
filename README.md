@@ -1,6 +1,8 @@
 # Pantheon CircleCI Orb
 
 [![CircleCI](https://circleci.com/gh/pantheon-systems/circleci-orb.svg?style=svg)](https://circleci.com/gh/pantheon-systems/circleci-orb)
+[![Actively Maintained](https://img.shields.io/badge/Pantheon-Actively_Maintained-yellow?logo=pantheon&color=FFDC28)](https://pantheon.io/docs/oss-support-levels#actively-maintained)
+
 
 This reposistory contains the source code for Pantheon's [CircleCI Orb](https://circleci.com/docs/2.0/orb-intro/).
 Orbs are a way of encapsulating sharable CircleCI jobs and commands.
