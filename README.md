@@ -110,7 +110,7 @@ workflows:
                   - master
       - pantheon/behat_tests:
           requires:
-            - pantheon/visual_regressi
+            - pantheon/visual_regression
   scheduled_update_check:
     triggers:
       - schedule:
