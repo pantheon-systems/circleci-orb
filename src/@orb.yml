@@ -12,7 +12,7 @@ executors:
         type: string
         default: "medium"
     docker:
-      - image: quay.io/pantheon-public/build-tools-ci:6.x
+      - image: quay.io/pantheon-public/build-tools-ci:8.x-php8.1
     resource_class: <<parameters.resource_class>>
 
 jobs:
