@@ -1,0 +1,10 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: circleci-orb
+  description: DevX owned repository
+spec:
+  type: service
+  lifecycle: production
+  owner: developer-experience
