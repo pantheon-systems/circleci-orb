@@ -109,6 +109,10 @@ jobs:
         description: "Determines whether or not every build will re-clone content from the environment set in terminus_clone_env. Set to false if cloning the database and files means builds are taking too long."
         default: true
         type: boolean
+      rsync_opts:
+        description: "Options to pass to the rsync command when copying site source into the Pantheon repository to prepare for commit and deploy."
+        default: "--delete"
+        type: string
 
     executor:
       name: default
@@ -212,7 +216,7 @@ jobs:
       - run:
           name: Copy code to the local clone of the Pantheon repository
           command: |
-              rsync -av --exclude='.git'  << parameters.directory_to_push >>/ $PANTHEON_REPO_DIR  --delete
+              rsync -av --exclude='.git'  << parameters.directory_to_push >>/ $PANTHEON_REPO_DIR  << parameters.rsync_opts >>
               # For easier debugging, show what files have changed.
               git -C $PANTHEON_REPO_DIR status
 
