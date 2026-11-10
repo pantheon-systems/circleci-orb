@@ -179,3 +179,10 @@ If you already have a mature CI discipline within your team this Orb may not pro
 ## Support
 
 This project is under active development and you may find bugs or have questions. Please use [the issue queue for this project](https://github.com/pantheon-systems/circleci-orb/issues).
+
+## Rollback
+
+- **When:** a new orb version breaks customers' CircleCI pipelines (reports in the issue queue or `#ask-hosting`).
+- **Recover:** orb versions can't be deleted, so publish the last good `src/@orb.yml` as the next patch version (by tag, or by hand by a CircleCI org admin while the pipeline is broken). Steps: [DEPLOYMENT.md#rollback](DEPLOYMENT.md#rollback).
+- **Verify:** the registry lists the new version and `circleci orb source pantheon-systems/pantheon@<new>` shows the restored content.
+- **Who:** `@pantheon-systems/developer-experience`, `#ask-hosting` (not paged).
